@@ -73,7 +73,7 @@ def create_embedded_constellation_html():
         
         .search-input {{
             width: calc(100% - 24px);
-            padding: 10px 40px 10px 12px;
+            padding: 10px 44px 10px 12px;
             background: rgba(20, 20, 30, 0.9);
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 6px;
@@ -91,15 +91,24 @@ def create_embedded_constellation_html():
         
         .search-clear {{
             position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
+            right: 12px;
+            top: 12px;
+            bottom: 12px;
+            width: 20px;
             background: none;
             border: none;
             color: #ffd700;
-            font-size: 16px;
+            font-size: 14px;
             cursor: pointer;
-            padding: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }}
+        
+        .search-clear:hover {{
+            background-color: rgba(255, 215, 0, 0.2);
         }}
         
         .search-suggestions {{
@@ -430,6 +439,54 @@ def create_embedded_constellation_html():
             0% {{ transform: rotate(0deg); }}
             100% {{ transform: rotate(360deg); }}
         }}
+        
+        /* Move zoom controls to middle left */
+        .leaflet-control-zoom {{
+            top: 50% !important;
+            left: 10px !important;
+            transform: translateY(-50%) !important;
+            margin: 0 !important;
+        }}
+        
+        .leaflet-top.leaflet-left {{
+            top: 50% !important;
+            left: 10px !important;
+            transform: translateY(-50%) !important;
+        }}
+        
+        /* Context info bar at bottom */
+        .context-bar {{
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px 8px 0 0;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-bottom: none;
+            z-index: 1000;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            transition: opacity 0.3s ease-in-out;
+            opacity: 0;
+            pointer-events: none;
+        }}
+        
+        .context-bar.visible {{
+            opacity: 1;
+        }}
+        
+        .context-bar .galaxy-context {{
+            color: #ff4444;
+            margin-right: 15px;
+        }}
+        
+        .context-bar .cluster-context {{
+            color: #ffd700;
+        }}
     </style>
 </head>
 <body>
@@ -491,6 +548,12 @@ def create_embedded_constellation_html():
         <div>Zoom: <span id="zoom-level" class="zoom-indicator">1.0</span></div>
         <div>Visible: <span id="visible-layers" class="visible-layers">Galaxies</span></div>
         <div>Objects: <span id="object-count" class="zoom-indicator">12</span></div>
+    </div>
+    
+    <!-- Context bar for showing current galaxy/cluster -->
+    <div id="context-bar" class="context-bar">
+        <span id="galaxy-context" class="galaxy-context"></span>
+        <span id="cluster-context" class="cluster-context"></span>
     </div>
     
     <div id="map"></div>
@@ -824,7 +887,11 @@ def create_embedded_constellation_html():
             return content;
         }}
         
-        // Add galaxies (always visible)
+        // Clear and add galaxies (always visible)
+        galaxyLayer.clearLayers();
+        galaxyLabelLayer.clearLayers();
+        console.log('Creating', galaxies.length, 'galaxy markers');
+        
         galaxies.forEach((galaxy, index) => {{
             const coord = [galaxy.geometry.coordinates[1], galaxy.geometry.coordinates[0]];
             
@@ -837,7 +904,8 @@ def create_embedded_constellation_html():
                 icon: L.divIcon({{
                     className: 'galaxy-marker',
                     iconSize: [24, 24],
-                    iconAnchor: [12, 12]
+                    iconAnchor: [12, 12],
+                    html: `<div data-galaxy="${{galaxy.properties.name}}" title="${{galaxy.properties.name}}"></div>`
                 }})
             }});
             
@@ -865,7 +933,10 @@ def create_embedded_constellation_html():
             label.addTo(galaxyLabelLayer);
         }});
         
-        // Add clusters (visible at medium zoom)
+        // Clear and add clusters (visible at medium zoom)
+        clusterLayer.clearLayers();
+        clusterLabelLayer.clearLayers();
+        
         clusters.forEach(cluster => {{
             const coord = [cluster.geometry.coordinates[1], cluster.geometry.coordinates[0]];
             
@@ -1130,6 +1201,134 @@ def create_embedded_constellation_html():
         const bounds = L.latLngBounds(galaxies.map(g => [g.geometry.coordinates[1], g.geometry.coordinates[0]]));
         map.fitBounds(bounds.pad(0.3));
         
+        // Track the last stable context to avoid constant changes
+        let stableContext = {{ galaxy: null, cluster: null }};
+        
+        // Function to find the most prominent galaxy/cluster at current view
+        function getCurrentContext() {{
+            const center = map.getCenter();
+            const zoom = map.getZoom();
+            
+            let currentGalaxy = null;
+            let currentCluster = null;
+            let minGalaxyDistance = Infinity;
+            let minClusterDistance = Infinity;
+            
+            // Find closest galaxy - always find one, no radius limit for now
+            galaxies.forEach(galaxy => {{
+                const galaxyLatLng = L.latLng(galaxy.geometry.coordinates[1], galaxy.geometry.coordinates[0]);
+                const distance = center.distanceTo(galaxyLatLng);
+                if (distance < minGalaxyDistance) {{
+                    minGalaxyDistance = distance;
+                    currentGalaxy = galaxy.properties.name;
+                }}
+            }});
+            
+            // Find closest cluster if zoomed in enough
+            if (zoom >= 1) {{
+                clusters.forEach(cluster => {{
+                    const clusterLatLng = L.latLng(cluster.geometry.coordinates[1], cluster.geometry.coordinates[0]);
+                    const distance = center.distanceTo(clusterLatLng);
+                    if (distance < minClusterDistance) {{
+                        minClusterDistance = distance;
+                        currentCluster = cluster.properties.name.split('.')[1] || cluster.properties.name;
+                    }}
+                }});
+            }}
+            
+            // Use stable context logic only at very high zoom
+            if (zoom >= 4) {{
+                // At high zoom, prefer stable context if we have it and it's reasonably close
+                if (stableContext.galaxy && minGalaxyDistance < 100000) {{ // 100km
+                    currentGalaxy = stableContext.galaxy;
+                }}
+                if (stableContext.cluster && minClusterDistance < 50000) {{ // 50km
+                    currentCluster = stableContext.cluster;
+                }}
+            }}
+            
+            // Update stable context
+            if (currentGalaxy) stableContext.galaxy = currentGalaxy;
+            if (currentCluster) stableContext.cluster = currentCluster;
+            
+            return {{ galaxy: currentGalaxy, cluster: currentCluster }};
+        }}
+        
+        // Function to update context bar and label fading
+        function updateContextAndLabels(zoom) {{
+            const context = getCurrentContext();
+            const contextBar = document.getElementById('context-bar');
+            const galaxyContext = document.getElementById('galaxy-context');
+            const clusterContext = document.getElementById('cluster-context');
+            
+            // Galaxy label fading and context
+            if (zoom >= 2.5) {{
+                // Completely fade out galaxy labels and show in context bar
+                galaxyLabelLayer.eachLayer(layer => {{
+                    if (layer.getElement()) {{
+                        layer.getElement().style.opacity = 0;
+                    }}
+                }});
+                
+                if (context.galaxy) {{
+                    galaxyContext.textContent = `🌌 ${{context.galaxy}}`;
+                    contextBar.classList.add('visible');
+                }} else {{
+                    galaxyContext.textContent = '';
+                }}
+            }} else {{
+                // Show galaxy labels normally
+                const galaxyOpacity = Math.max(0.3, Math.min(1, (3 - zoom) / 2));
+                galaxyLabelLayer.eachLayer(layer => {{
+                    if (layer.getElement()) {{
+                        layer.getElement().style.opacity = galaxyOpacity;
+                    }}
+                }});
+                galaxyContext.textContent = '';
+            }}
+            
+            // Cluster label fading and context
+            if (zoom >= 3.5) {{
+                // Completely fade out cluster labels and show in context bar
+                clusterLabelLayer.eachLayer(layer => {{
+                    if (layer.getElement()) {{
+                        layer.getElement().style.opacity = 0;
+                    }}
+                }});
+                
+                if (context.cluster) {{
+                    clusterContext.textContent = `⭐ ${{context.cluster}}`;
+                    contextBar.classList.add('visible');
+                }} else {{
+                    clusterContext.textContent = '';
+                }}
+            }} else if (zoom >= 1) {{
+                // Show cluster labels with fading
+                const clusterOpacity = Math.max(0.3, Math.min(1, (4 - zoom) / 2));
+                clusterLabelLayer.eachLayer(layer => {{
+                    if (layer.getElement()) {{
+                        layer.getElement().style.opacity = clusterOpacity;
+                    }}
+                }});
+                clusterContext.textContent = '';
+            }} else {{
+                clusterContext.textContent = '';
+            }}
+            
+            // Solar system label fading (unchanged)
+            const solarSystemOpacity = zoom >= 3.5 ? Math.max(0.2, (4 - zoom) * 2) : 1;
+            solarSystemLabelLayer.eachLayer(layer => {{
+                if (layer.getElement()) {{
+                    layer.getElement().style.opacity = solarSystemOpacity;
+                }}
+            }});
+            
+            // Hide context bar if no context to show
+            if (!galaxyContext.textContent && !clusterContext.textContent) {{
+                contextBar.classList.remove('visible');
+            }}
+        }}
+        
         // Handle zoom-based layer visibility
         function updateLayerVisibility() {{
             const zoom = map.getZoom();
@@ -1138,8 +1337,8 @@ def create_embedded_constellation_html():
             let visibleLayers = ['Galaxies'];
             let objectCount = galaxies.length;
             
-            // Show/hide clusters based on zoom level
-            if (zoom >= 1) {{
+            // Show/hide clusters based on zoom level (but not at highest zoom)
+            if (zoom >= 1 && zoom < 4) {{
                 if (!map.hasLayer(clusterLayer)) {{
                     map.addLayer(clusterLayer);
                     map.addLayer(clusterLabelLayer);
@@ -1193,38 +1392,51 @@ def create_embedded_constellation_html():
                 }}
             }}
             
-            // Add fading effects for labels based on zoom level
-            // Fade out galaxy labels as you zoom in
-            const galaxyOpacity = Math.max(0.3, Math.min(1, (3 - zoom) / 2));
-            galaxyLabelLayer.eachLayer(layer => {{
-                if (layer.getElement()) {{
-                    layer.getElement().style.opacity = galaxyOpacity;
+            // Hide galaxy markers at high zoom levels to reduce clutter
+            if (zoom >= 4) {{
+                // Hide galaxy markers when viewing individual stars
+                if (map.hasLayer(galaxyLayer)) {{
+                    console.log('Hiding galaxy markers at zoom', zoom);
+                    map.removeLayer(galaxyLayer);
                 }}
-            }});
+            }} else {{
+                // Show galaxy markers at lower zoom levels
+                if (!map.hasLayer(galaxyLayer)) {{
+                    console.log('Showing galaxy markers at zoom', zoom);
+                    map.addLayer(galaxyLayer);
+                }}
+            }}
             
-            // Fade out cluster labels as you zoom in further
-            const clusterOpacity = Math.max(0.3, Math.min(1, (4 - zoom) / 2));
-            clusterLabelLayer.eachLayer(layer => {{
-                if (layer.getElement()) {{
-                    layer.getElement().style.opacity = clusterOpacity;
-                }}
-            }});
-            
-            // Fade out solar system labels when switching to individual stars
-            const solarSystemOpacity = zoom >= 3.5 ? Math.max(0.2, (4 - zoom) * 2) : 1;
-            solarSystemLabelLayer.eachLayer(layer => {{
-                if (layer.getElement()) {{
-                    layer.getElement().style.opacity = solarSystemOpacity;
-                }}
-            }});
+            // Handle label fading and context bar updates
+            updateContextAndLabels(zoom);
             
             // Update UI
             document.getElementById('visible-layers').textContent = visibleLayers.join(', ');
             document.getElementById('object-count').textContent = objectCount.toLocaleString();
         }}
         
+        // Add function to clean up any rogue markers
+        function cleanUpRogueMarkers() {{
+            // Remove any galaxy markers that might be outside our layer management
+            document.querySelectorAll('.galaxy-marker').forEach(element => {{
+                // Check if this marker is properly managed by our layers
+                const marker = element._leaflet_pos;
+                if (marker && !galaxyLayer.hasLayer(marker)) {{
+                    console.log('Found and removing rogue galaxy marker');
+                    element.remove();
+                }}
+            }});
+        }}
+        
         // Update layer visibility on zoom changes
         map.on('zoomend', updateLayerVisibility);
+        map.on('zoomend', cleanUpRogueMarkers);
+        
+        // Update context when user pans around
+        map.on('moveend', () => {{
+            const zoom = map.getZoom();
+            updateContextAndLabels(zoom);
+        }});
         
         // Update star rendering on map moves for viewport culling
         map.on('moveend', debouncedRenderStars);
