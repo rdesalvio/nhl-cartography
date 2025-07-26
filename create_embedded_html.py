@@ -487,6 +487,60 @@ def create_embedded_constellation_html():
         .context-bar .cluster-context {{
             color: #ffd700;
         }}
+        
+        /* Simple hover effects that work with Leaflet positioning */
+        .celestial-object {{
+            transition: filter 0.2s ease, opacity 0.2s ease;
+            cursor: pointer;
+        }}
+        
+        .celestial-object:hover {{
+            filter: brightness(1.3) drop-shadow(0 0 8px currentColor);
+            z-index: 1000 !important;
+        }}
+        
+        .celestial-object.dimmed {{
+            opacity: 0.4;
+            filter: brightness(0.8);
+        }}
+        
+        .celestial-label {{
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }}
+        
+        .celestial-label:hover {{
+            filter: brightness(1.2) drop-shadow(0 2px 6px rgba(0,0,0,0.8));
+            z-index: 10000 !important;
+            position: relative !important;
+        }}
+        
+        .celestial-label.dimmed {{
+            opacity: 0.3;
+            filter: brightness(0.7);
+        }}
+        
+        /* Specific hover effects without transforms */
+        .galaxy-marker:hover {{
+            filter: brightness(1.4) drop-shadow(0 0 12px #ff4444) !important;
+        }}
+        
+        .cluster-marker:hover {{
+            filter: brightness(1.3) drop-shadow(0 0 10px #ffd700) !important;
+        }}
+        
+        .solar-system-marker:hover {{
+            filter: brightness(1.4) drop-shadow(0 0 15px #ffa500) !important;
+        }}
+        
+        .solar-system-label:hover {{
+            background: rgba(255, 165, 0, 0.95) !important;
+            color: #000 !important;
+            box-shadow: 0 3px 12px rgba(255, 165, 0, 0.6) !important;
+            font-weight: bold !important;
+            z-index: 10001 !important;
+            position: relative !important;
+        }}
     </style>
 </head>
 <body>
@@ -623,7 +677,20 @@ def create_embedded_constellation_html():
             params.set('lng', lng.toFixed(6));
             params.set('zoom', zoom.toFixed(2));
             
-            return `${{window.location.origin}}${{window.location.pathname}}?${{params.toString()}}`;
+            // Handle different URL contexts
+            let baseUrl;
+            if (window.location.protocol === 'file:') {{
+                // For local files, use the full file path
+                baseUrl = window.location.href.split('?')[0];
+            }} else if (window.location.hostname === 'localhost' || window.location.hostname.includes('github.io')) {{
+                // For localhost or GitHub Pages
+                baseUrl = `${{window.location.origin}}${{window.location.pathname}}`;
+            }} else {{
+                // Default case
+                baseUrl = `${{window.location.origin}}${{window.location.pathname}}`;
+            }}
+            
+            return `${{baseUrl}}?${{params.toString()}}`;
         }}
         
         function navigateToLocation(name, type, coordinate, targetZoom) {{
@@ -631,7 +698,7 @@ def create_embedded_constellation_html():
             map.setView([lat, lng], targetZoom, {{animate: true, duration: 1.5}});
             updateUrl(name, type, lat, lng, targetZoom);
             
-            // Show a temporary indicator
+            // Show a temporary indicator and try to open the popup
             setTimeout(() => {{
                 const indicator = L.marker([lat, lng], {{
                     icon: L.divIcon({{
@@ -642,8 +709,47 @@ def create_embedded_constellation_html():
                     }})
                 }}).addTo(map);
                 
+                // Try to find and open the popup for the shared object
+                setTimeout(() => {{
+                    openPopupAtLocation(type, coordinate, name);
+                }}, 500);
+                
                 setTimeout(() => map.removeLayer(indicator), 3000);
             }}, 1000);
+        }}
+        
+        function openPopupAtLocation(type, coordinate, name) {{
+            const [lat, lng] = coordinate;
+            const targetLatLng = L.latLng(lat, lng);
+            const tolerance = 0.001; // Small tolerance for coordinate matching
+            
+            // Find the closest marker to the shared coordinates
+            let closestMarker = null;
+            let minDistance = Infinity;
+            
+            // Check all active layers for markers near the target coordinates
+            [galaxyLayer, clusterLayer, solarSystemLayer, starLayer].forEach(layer => {{
+                if (map.hasLayer(layer)) {{
+                    layer.eachLayer(marker => {{
+                        if (marker.getLatLng) {{
+                            const markerLatLng = marker.getLatLng();
+                            const distance = targetLatLng.distanceTo(markerLatLng);
+                            if (distance < minDistance && distance < tolerance * 111320) {{ // Convert tolerance to meters
+                                minDistance = distance;
+                                closestMarker = marker;
+                            }}
+                        }}
+                    }});
+                }}
+            }});
+            
+            // Open the popup if we found a close marker
+            if (closestMarker && closestMarker.getPopup) {{
+                closestMarker.openPopup();
+                console.log(`Opened popup for shared location: ${{name}}`);
+            }} else {{
+                console.log(`Could not find marker for shared location: ${{name}} at [${{lat}}, ${{lng}}]`);
+            }}
         }}
         
         function showNotification(message, isSuccess = true) {{
@@ -1131,7 +1237,7 @@ def create_embedded_constellation_html():
             const shareButtonId = `share-btn-${{stats.name.replace(/[^a-zA-Z0-9]/g, '-')}}`;
             const targetZoom = stats.level === 'galaxy' ? 1 : 
                               stats.level === 'cluster' ? 2.5 : 
-                              stats.level === 'solar system' ? 4 : 2;
+                              stats.level === 'solar system' ? 3.5 : 2;
             
             let content = `<div style="max-width: 300px;">
                 <h3 style="margin: 0 0 10px 0; color: #ffd700; text-align: center;">
@@ -1453,6 +1559,21 @@ def create_embedded_constellation_html():
                         let popupContent = `
                             <div class="goal-info">
                                 <h3>${{props.player_name || 'Unknown Player'}}</h3>
+                                <div style="text-align: center; margin-bottom: 15px;">
+                                    <button onclick="window.shareLocation('${{(props.player_name || 'Unknown Player').replace(/'/g, "\\'")}} Goal', 'star', [${{coord[0]}},${{coord[1]}}], 5)" style="
+                                        background: linear-gradient(45deg, #87ceeb, #b6e5ff);
+                                        color: #000;
+                                        border: none;
+                                        padding: 6px 12px;
+                                        border-radius: 15px;
+                                        font-weight: bold;
+                                        cursor: pointer;
+                                        font-size: 11px;
+                                        transition: transform 0.2s ease;
+                                    " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                                        🔗 Share
+                                    </button>
+                                </div>
                                 <div class="goal-detail">
                                     <strong>Team:</strong> <span>${{props.team_name || 'Unknown'}}</span>
                                 </div>
@@ -1476,6 +1597,9 @@ def create_embedded_constellation_html():
                                 </div>
                                 <div class="goal-detail">
                                     <strong>Goal Location:</strong> <span>${{props.goal_x !== null && props.goal_y !== null ? `(x: ${{props.goal_x}}, y: ${{props.goal_y}})` : 'Not recorded'}}</span>
+                                </div>
+                                <div class="goal-detail">
+                                    <strong>Solar System:</strong> <span>${{props.solar_system ? props.solar_system.split('.')[2] || props.solar_system : 'Unknown'}}</span>
                                 </div>
                                 <div class="goal-detail">
                                     <strong>Cluster:</strong> <span style="color: ${{clusterColor}}; font-weight: bold;">●</span> ${{props.goal_count || 1}} goals
@@ -1650,8 +1774,8 @@ def create_embedded_constellation_html():
                 clusterContext.textContent = '';
             }}
             
-            // Solar system label fading (unchanged)
-            const solarSystemOpacity = zoom >= 3.5 ? Math.max(0.2, (4 - zoom) * 2) : 1;
+            // Solar system label fading - don't fade at zoom 4+ when viewing individual stars
+            const solarSystemOpacity = zoom >= 5 ? 0 : 1;
             solarSystemLabelLayer.eachLayer(layer => {{
                 if (layer.getElement()) {{
                     layer.getElement().style.opacity = solarSystemOpacity;
@@ -1688,7 +1812,7 @@ def create_embedded_constellation_html():
             }}
             
             // Show/hide solar systems vs stars based on zoom level
-            if (zoom >= 2 && zoom < 4) {{
+            if (zoom >= 3 && zoom < 5) {{
                 // Show solar systems, hide individual stars
                 if (!map.hasLayer(solarSystemLayer)) {{
                     map.addLayer(solarSystemLayer);
@@ -1699,7 +1823,7 @@ def create_embedded_constellation_html():
                 }}
                 visibleLayers.push('Solar Systems');
                 objectCount += solarSystems.length;
-            }} else if (zoom >= 4) {{
+            }} else if (zoom >= 5) {{
                 // Show individual stars, hide solar systems
                 if (!map.hasLayer(starLayer)) {{
                     map.addLayer(starLayer);
@@ -1836,7 +1960,7 @@ def create_embedded_constellation_html():
             if (playerInfo.navigable) {{
                 const targetZoom = playerInfo.type === 'Galaxy' ? 1 : 
                                    playerInfo.type === 'Cluster' ? 2.5 : 
-                                   playerInfo.type === 'Solar System' ? 4 : 2;
+                                   playerInfo.type === 'Solar System' ? 3.5 : 2;
                 navigateToLocation(playerInfo.name, playerInfo.type, playerInfo.data.coordinate, targetZoom);
             }} else {{
                 drawConnectionLines();
@@ -1865,7 +1989,7 @@ def create_embedded_constellation_html():
             // Find visible components containing this player/goalie (viewport-only)
             const visibleComponents = [];
             
-            if (zoom >= 4) {{
+            if (zoom >= 5) {{
                 // Individual goals level - connect rendered stars in viewport
                 relevantGoals.forEach((goal, index) => {{
                     if (renderedStars.has(stars.indexOf(goal))) {{
@@ -1875,7 +1999,7 @@ def create_embedded_constellation_html():
                         }}
                     }}
                 }});
-            }} else if (zoom >= 2) {{
+            }} else if (zoom >= 3) {{
                 // Solar system level - connect solar systems containing this player in viewport
                 const solarSystemsWithPlayer = new Set();
                 relevantGoals.forEach(goal => {{
@@ -2002,6 +2126,7 @@ def create_embedded_constellation_html():
                 drawConnectionLines();
             }}
         }});
+        
         
         // Initial update
         updateLayerVisibility();
