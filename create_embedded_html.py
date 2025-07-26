@@ -503,9 +503,9 @@ def create_embedded_constellation_html():
     </div>
     
     <div class="ui-panel search-panel">
-        <h3 style="margin: 0 0 10px 0; color: #ffd700; font-size: 16px;">🔍 Player Search</h3>
+        <h3 style="margin: 0 0 10px 0; color: #ffd700; font-size: 16px;">🔍 Universal Search</h3>
         <div class="search-container">
-            <input type="text" id="player-search" class="search-input" placeholder="Search players and goalies..." autocomplete="off">
+            <input type="text" id="player-search" class="search-input" placeholder="Search players, goalies, galaxies, clusters..." autocomplete="off">
             <button id="search-clear" class="search-clear" style="display: none;">✕</button>
             <div id="search-suggestions" class="search-suggestions"></div>
         </div>
@@ -586,6 +586,249 @@ def create_embedded_constellation_html():
             fadeAnimation: true
         }});
         
+        // URL parameter handling for sharing locations
+        function parseUrlParams() {{
+            const params = new URLSearchParams(window.location.search);
+            const locationData = {{
+                name: params.get('name'),
+                type: params.get('type'),
+                lat: parseFloat(params.get('lat')),
+                lng: parseFloat(params.get('lng')),
+                zoom: parseFloat(params.get('zoom'))
+            }};
+            
+            if (locationData.name && locationData.type && !isNaN(locationData.lat) && !isNaN(locationData.lng) && !isNaN(locationData.zoom)) {{
+                return locationData;
+            }}
+            return null;
+        }}
+        
+        function updateUrl(name, type, lat, lng, zoom) {{
+            const params = new URLSearchParams();
+            params.set('name', name);
+            params.set('type', type);
+            params.set('lat', lat.toFixed(6));
+            params.set('lng', lng.toFixed(6));
+            params.set('zoom', zoom.toFixed(2));
+            
+            const newUrl = `${{window.location.pathname}}?${{params.toString()}}`;
+            window.history.replaceState(null, '', newUrl);
+        }}
+        
+        function generateShareableLink(name, type, lat, lng, zoom) {{
+            const params = new URLSearchParams();
+            params.set('name', name);
+            params.set('type', type);
+            params.set('lat', lat.toFixed(6));
+            params.set('lng', lng.toFixed(6));
+            params.set('zoom', zoom.toFixed(2));
+            
+            return `${{window.location.origin}}${{window.location.pathname}}?${{params.toString()}}`;
+        }}
+        
+        function navigateToLocation(name, type, coordinate, targetZoom) {{
+            const [lat, lng] = coordinate;
+            map.setView([lat, lng], targetZoom, {{animate: true, duration: 1.5}});
+            updateUrl(name, type, lat, lng, targetZoom);
+            
+            // Show a temporary indicator
+            setTimeout(() => {{
+                const indicator = L.marker([lat, lng], {{
+                    icon: L.divIcon({{
+                        className: 'navigation-indicator',
+                        html: '<div style="background: #ffd700; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; animation: pulse 1s ease-in-out 3;"></div>',
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    }})
+                }}).addTo(map);
+                
+                setTimeout(() => map.removeLayer(indicator), 3000);
+            }}, 1000);
+        }}
+        
+        function showNotification(message, isSuccess = true) {{
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${{isSuccess ? 'rgba(76, 175, 80, 0.95)' : 'rgba(244, 67, 54, 0.95)'}};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                z-index: 15000;
+                font-weight: bold;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                transform: translateX(400px);
+                transition: all 0.3s ease;
+                max-width: 300px;
+                font-size: 14px;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Slide in
+            setTimeout(() => {{
+                notification.style.transform = 'translateX(0)';
+            }}, 10);
+            
+            // Fade out and remove
+            setTimeout(() => {{
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(400px)';
+                setTimeout(() => {{
+                    if (notification.parentNode) {{
+                        document.body.removeChild(notification);
+                    }}
+                }}, 300);
+            }}, 2500);
+        }}
+        
+        async function copyShareLink(name, type, coordinate, zoom) {{
+            const [lat, lng] = coordinate;
+            const shareUrl = generateShareableLink(name, type, lat, lng, zoom);
+            
+            console.log('Attempting to copy URL:', shareUrl);
+            
+            // Method 1: Modern clipboard API
+            if (navigator.clipboard) {{
+                try {{
+                    await navigator.clipboard.writeText(shareUrl);
+                    console.log('Successfully copied using clipboard API');
+                    showNotification(`📋 Link copied: ${{name}}`);
+                    return;
+                }} catch (err) {{
+                    console.error('Clipboard API failed:', err);
+                }}
+            }}
+            
+            // Method 2: Legacy execCommand
+            try {{
+                const textArea = document.createElement('textarea');
+                textArea.value = shareUrl;
+                textArea.style.cssText = `
+                    position: fixed;
+                    left: -9999px;
+                    top: -9999px;
+                    opacity: 0;
+                    pointer-events: none;
+                `;
+                document.body.appendChild(textArea);
+                
+                // Focus and select the text
+                textArea.focus();
+                textArea.select();
+                textArea.setSelectionRange(0, textArea.value.length);
+                
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                if (successful) {{
+                    console.log('Successfully copied using execCommand');
+                    showNotification(`📋 Link copied: ${{name}}`);
+                    return;
+                }} else {{
+                    console.error('execCommand returned false');
+                }}
+            }} catch (err) {{
+                console.error('execCommand failed:', err);
+            }}
+            
+            // Method 3: Prompt user to manually copy
+            try {{
+                // For mobile/problematic browsers, use prompt
+                if (typeof prompt !== 'undefined') {{
+                    prompt('Copy this link to share:', shareUrl);
+                    showNotification(`📋 Link ready to copy: ${{name}}`);
+                    return;
+                }}
+            }} catch (err) {{
+                console.error('Prompt failed:', err);
+            }}
+            
+            // Method 4: Show modal as final fallback
+            console.log('All clipboard methods failed, showing modal');
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                z-index: 20000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+            
+            const popup = document.createElement('div');
+            popup.style.cssText = `
+                background: rgba(0, 0, 0, 0.95);
+                color: white;
+                padding: 30px;
+                border-radius: 12px;
+                border: 2px solid #ffd700;
+                max-width: 500px;
+                text-align: center;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            `;
+            
+            popup.innerHTML = `
+                <h3 style="color: #ffd700; margin: 0 0 15px 0;">🔗 Share Link for ${{name}}</h3>
+                <p style="margin: 10px 0;">Select and copy this link to share:</p>
+                <input type="text" value="${{shareUrl}}" readonly style="
+                    width: 100%;
+                    padding: 10px;
+                    background: #1a1a1a;
+                    color: white;
+                    border: 1px solid #ffd700;
+                    border-radius: 5px;
+                    margin: 15px 0;
+                    font-family: monospace;
+                    font-size: 12px;
+                " onclick="this.select()">
+                <br>
+                <button onclick="this.parentElement.parentElement.remove()" style="
+                    background: #ffd700;
+                    color: #000;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    margin-top: 10px;
+                ">Close</button>
+            `;
+            
+            modal.appendChild(popup);
+            document.body.appendChild(modal);
+            
+            // Auto-select the input text
+            setTimeout(() => {{
+                const input = popup.querySelector('input');
+                if (input) {{
+                    input.focus();
+                    input.select();
+                }}
+            }}, 100);
+            
+            // Close on background click
+            modal.onclick = (e) => {{
+                if (e.target === modal) {{
+                    modal.remove();
+                }}
+            }};
+            
+            showNotification('📋 Manual copy required - see popup', false);
+        }}
+        
+        // Global function to be called from onclick handlers in popups
+        window.shareLocation = function(name, type, coordinate, zoom) {{
+            console.log('Share button clicked for:', name, type, coordinate, zoom);
+            copyShareLink(name, type, coordinate, zoom);
+        }};
+        
         // Layer groups for different hierarchy levels
         const galaxyLayer = L.layerGroup();
         const galaxyLabelLayer = L.layerGroup();
@@ -609,9 +852,12 @@ def create_embedded_constellation_html():
         
         console.log('Processing:', galaxies.length, 'galaxies,', clusters.length, 'clusters,', solarSystems.length, 'solar systems,', stars.length, 'stars');
         
-        // Build search indexes for players and goalies
+        // Build search indexes for players, goalies, and celestial objects
         const playerIndex = new Map();
         const goalieIndex = new Map();
+        const galaxyIndex = new Map();
+        const clusterIndex = new Map();
+        const solarSystemIndex = new Map();
         
         stars.forEach(star => {{
             const props = star.properties;
@@ -650,6 +896,42 @@ def create_embedded_constellation_html():
             }}
         }});
         
+        // Index galaxies, clusters, and solar systems
+        galaxies.forEach(galaxy => {{
+            const stats = getHierarchicalStats(galaxy.properties.name, 'galaxy');
+            galaxyIndex.set(galaxy.properties.name, {{
+                name: galaxy.properties.name,
+                type: 'galaxy',
+                data: galaxy,
+                stats: stats,
+                coordinate: [galaxy.geometry.coordinates[1], galaxy.geometry.coordinates[0]]
+            }});
+        }});
+        
+        clusters.forEach(cluster => {{
+            const stats = getHierarchicalStats(cluster.properties.name, 'cluster');
+            clusterIndex.set(cluster.properties.name, {{
+                name: cluster.properties.name,
+                displayName: cluster.properties.name.split('.')[1] || cluster.properties.name,
+                type: 'cluster',
+                data: cluster,
+                stats: stats,
+                coordinate: [cluster.geometry.coordinates[1], cluster.geometry.coordinates[0]]
+            }});
+        }});
+        
+        solarSystems.forEach(solarSystem => {{
+            const stats = getHierarchicalStats(solarSystem.properties.name, 'solar system');
+            solarSystemIndex.set(solarSystem.properties.name, {{
+                name: solarSystem.properties.name,
+                displayName: solarSystem.properties.name.split('.')[2] || solarSystem.properties.name,
+                type: 'solar system',
+                data: solarSystem,
+                stats: stats,
+                coordinate: [solarSystem.geometry.coordinates[1], solarSystem.geometry.coordinates[0]]
+            }});
+        }});
+        
         // Build combined search list
         const searchData = [];
         playerIndex.forEach(player => {{
@@ -670,11 +952,43 @@ def create_embedded_constellation_html():
                 data: goalie
             }});
         }});
+        galaxyIndex.forEach(galaxy => {{
+            searchData.push({{
+                name: galaxy.name,
+                type: 'Galaxy',
+                count: galaxy.stats.stars,
+                teams: `${{galaxy.stats.clusters}} clusters, ${{galaxy.stats.solarSystems}} systems`,
+                data: galaxy,
+                navigable: true
+            }});
+        }});
+        clusterIndex.forEach(cluster => {{
+            searchData.push({{
+                name: cluster.displayName,
+                fullName: cluster.name,
+                type: 'Cluster',
+                count: cluster.stats.stars,
+                teams: `${{cluster.stats.solarSystems}} solar systems`,
+                data: cluster,
+                navigable: true
+            }});
+        }});
+        solarSystemIndex.forEach(solarSystem => {{
+            searchData.push({{
+                name: solarSystem.displayName,
+                fullName: solarSystem.name,
+                type: 'Solar System',
+                count: solarSystem.stats.stars,
+                teams: `${{solarSystem.stats.topPlayers.size}} unique players`,
+                data: solarSystem,
+                navigable: true
+            }});
+        }});
         
         // Sort by goal count (descending)
         searchData.sort((a, b) => b.count - a.count);
         
-        console.log(`Indexed ${{playerIndex.size}} players and ${{goalieIndex.size}} goalies`);
+        console.log(`Indexed ${{playerIndex.size}} players, ${{goalieIndex.size}} goalies, ${{galaxyIndex.size}} galaxies, ${{clusterIndex.size}} clusters, ${{solarSystemIndex.size}} solar systems`);
         
         // Function to get hierarchical statistics for celestial objects
         function getHierarchicalStats(objectName, level) {{
@@ -813,13 +1127,33 @@ def create_embedded_constellation_html():
         }}
         
         // Function to create hierarchical popup content
-        function createHierarchicalPopup(stats) {{
+        function createHierarchicalPopup(stats, coordinate) {{
+            const shareButtonId = `share-btn-${{stats.name.replace(/[^a-zA-Z0-9]/g, '-')}}`;
+            const targetZoom = stats.level === 'galaxy' ? 1 : 
+                              stats.level === 'cluster' ? 2.5 : 
+                              stats.level === 'solar system' ? 4 : 2;
+            
             let content = `<div style="max-width: 300px;">
                 <h3 style="margin: 0 0 10px 0; color: #ffd700; text-align: center;">
                     🌌 ${{stats.name}}
                 </h3>
                 <div style="font-size: 12px; color: #ccc; text-align: center; margin-bottom: 15px;">
                     ${{stats.level.charAt(0).toUpperCase() + stats.level.slice(1)}}
+                </div>
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <button onclick="window.shareLocation('${{stats.name.replace(/'/g, "\\'")}}', '${{stats.level}}', [${{coordinate[0]}},${{coordinate[1]}}], ${{targetZoom}})" style="
+                        background: linear-gradient(45deg, #ffd700, #ffed4a);
+                        color: #000;
+                        border: none;
+                        padding: 8px 16px;
+                        border-radius: 20px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        font-size: 12px;
+                        transition: transform 0.2s ease;
+                    " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        🔗 Share
+                    </button>
                 </div>`;
             
             // Hierarchical composition
@@ -884,6 +1218,7 @@ def create_embedded_constellation_html():
             }}
             
             content += `</div>`;
+            
             return content;
         }}
         
@@ -897,7 +1232,7 @@ def create_embedded_constellation_html():
             
             // Get hierarchical stats for this galaxy
             const galaxyStats = getHierarchicalStats(galaxy.properties.name, 'galaxy');
-            const hierarchicalPopup = createHierarchicalPopup(galaxyStats);
+            const hierarchicalPopup = createHierarchicalPopup(galaxyStats, coord);
             
             // Galaxy marker
             const marker = L.marker(coord, {{
@@ -942,7 +1277,7 @@ def create_embedded_constellation_html():
             
             // Get hierarchical stats for this cluster
             const clusterStats = getHierarchicalStats(cluster.properties.name, 'cluster');
-            const hierarchicalPopup = createHierarchicalPopup(clusterStats);
+            const hierarchicalPopup = createHierarchicalPopup(clusterStats, coord);
             
             const marker = L.marker(coord, {{
                 icon: L.divIcon({{
@@ -1029,7 +1364,7 @@ def create_embedded_constellation_html():
             
             // Get hierarchical stats for this solar system
             const solarSystemStats = getHierarchicalStats(solarSystem.properties.name, 'solar system');
-            const hierarchicalPopup = createHierarchicalPopup(solarSystemStats);
+            const hierarchicalPopup = createHierarchicalPopup(solarSystemStats, coord);
             
             marker.bindPopup(hierarchicalPopup, {{
                 maxWidth: 350,
@@ -1497,7 +1832,15 @@ def create_embedded_constellation_html():
             searchActive.style.display = 'block';
             selectedPlayerSpan.textContent = `${{playerInfo.name}} (${{playerInfo.type}})`;
             
-            drawConnectionLines();
+            // If it's a navigable celestial object, navigate to it
+            if (playerInfo.navigable) {{
+                const targetZoom = playerInfo.type === 'Galaxy' ? 1 : 
+                                   playerInfo.type === 'Cluster' ? 2.5 : 
+                                   playerInfo.type === 'Solar System' ? 4 : 2;
+                navigateToLocation(playerInfo.name, playerInfo.type, playerInfo.data.coordinate, targetZoom);
+            }} else {{
+                drawConnectionLines();
+            }}
         }}
         
         function clearSearch() {{
@@ -1663,8 +2006,19 @@ def create_embedded_constellation_html():
         // Initial update
         updateLayerVisibility();
         
+        // Handle URL parameters for shared locations
+        const urlLocation = parseUrlParams();
+        if (urlLocation) {{
+            console.log('Navigating to shared location:', urlLocation);
+            setTimeout(() => {{
+                navigateToLocation(urlLocation.name, urlLocation.type, [urlLocation.lat, urlLocation.lng], urlLocation.zoom);
+            }}, 1000); // Wait for map to fully initialize
+        }}
+        
         console.log('NHL Constellation Map initialized successfully!');
         console.log('Zoom levels: 0 (Galaxies), 1+ (+ Clusters), 2-3 (+ Solar Systems), 4+ (+ Individual Goals)');
+        console.log('🔗 Share locations by using the "Copy Share Link" button in any celestial object popup');
+        console.log('🔍 Search now supports players, goalies, galaxies, clusters, and solar systems');
     </script>
 </body>
 </html>'''
