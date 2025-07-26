@@ -62,3 +62,8 @@ Eventually, I wil rename the clusters and potentially revisit some of the cluste
 
 I am on the lookout for any easy to implement new ideas for the UI to make it better and make it more fun to interact with the data. Some off the cuff ideas
 - How the galaxies are rendered at the most zoomed out view are pretty boring as they are just red rectangles. It might be cooler if there was a better way to show them
+- Add subtle pulsing/breathing animation to active clusters
+- Implement constellation lines connecting related goals within clusters
+- Timeline scrubber to watch goals appear chronologically across the map
+- Replace red rectangles with actual galaxy-like spirals or nebula shapes using
+  CSS animations or SVG
