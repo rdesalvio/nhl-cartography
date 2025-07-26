@@ -28,11 +28,26 @@ import os
 import logging
 from datetime import datetime
 import warnings
+import time
 warnings.filterwarnings('ignore')
 
-# Set up logging
+# Set up logging first
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# AI for dynamic cluster naming
+try:
+    import anthropic
+    # API key will be read from environment variable ANTHROPIC_API_KEY
+    anthropic_client = anthropic.Anthropic()
+    AI_AVAILABLE = True
+    logger.info("Anthropic Claude API configured successfully")
+except ImportError:
+    AI_AVAILABLE = False
+    logger.warning("Anthropic API not available - using generic names")
+except Exception as e:
+    AI_AVAILABLE = False
+    logger.warning(f"Failed to configure Anthropic API: {e} - using generic names")
 
 # Set matplotlib style
 plt.style.use('dark_background')
@@ -92,7 +107,133 @@ class SequentialHierarchicalClusterer:
         
         logger.info(f"Initialized SequentialHierarchicalClusterer")
         logger.info(f"Output directory: {output_dir}")
+        
+        # Track generated names to ensure uniqueness
+        self.generated_names = {
+            'galaxy': set(),
+            'cluster': set(), 
+            'solar system': set(),
+            'star': set()
+        }
+        
+        # Rate limiting for Anthropic API (much more generous limits with pro plan)
+        self.last_api_call_time = 0
+        self.api_rate_limit_seconds = 0.5  # Conservative 0.5 second between calls for pro plan
+        
         logger.info(f"Clustering levels: {len(self.clustering_sequence)}")
+        logger.info(f"API rate limit: {60/self.api_rate_limit_seconds:.0f} requests per minute")
+    
+    def generate_cluster_name(self, level_name, cluster_goals, features_used):
+        """
+        Generate a unique astronomical cluster name using AI based on cluster context.
+        
+        Args:
+            level_name: Type of celestial object (galaxy, cluster, solar system, star)
+            cluster_goals: DataFrame of goals in this cluster
+            features_used: List of features used for clustering at this level
+            
+        Returns:
+            str: Generated astronomical name
+        """
+        if not AI_AVAILABLE:
+            # Fallback to generic naming
+            base_name = f"{level_name}_{len(self.generated_names[level_name])}"
+            self.generated_names[level_name].add(base_name)
+            return base_name
+        
+        try:
+            # Rate limiting: conservative delay for Anthropic API
+            current_time = time.time()
+            time_since_last_call = current_time - self.last_api_call_time
+            
+            if time_since_last_call < self.api_rate_limit_seconds:
+                sleep_time = self.api_rate_limit_seconds - time_since_last_call
+                logger.info(f"Rate limiting: sleeping for {sleep_time:.2f} seconds")
+                time.sleep(sleep_time)
+            
+            # Prepare cluster context information
+            context_info = []
+            
+            # Analyze features used for clustering
+            if 'x' in features_used and 'y' in features_used:
+                x_range = f"{cluster_goals['x'].min():.0f} to {cluster_goals['x'].max():.0f}"
+                y_range = f"{cluster_goals['y'].min():.0f} to {cluster_goals['y'].max():.0f}" 
+                context_info.append(f"Spatial coordinates: x={x_range}, y={y_range}")
+            
+            if 'shot_type' in features_used:
+                shot_types = cluster_goals['shot_type'].value_counts().head(3)
+                context_info.append(f"Common shot types: {', '.join([f'{shot} ({count})' for shot, count in shot_types.items()])}")
+            
+            if 'period' in features_used:
+                periods = cluster_goals['period'].value_counts().head(3)
+                context_info.append(f"Game periods: {', '.join([f'Period {period} ({count})' for period, count in periods.items()])}")
+            
+            if 'team_score' in features_used or 'opponent_score' in features_used:
+                avg_team_score = cluster_goals['team_score'].mean()
+                avg_opp_score = cluster_goals['opponent_score'].mean()
+                context_info.append(f"Average score context: {avg_team_score:.1f} - {avg_opp_score:.1f}")
+            
+            if 'player_name' in features_used:
+                top_players = cluster_goals['player_name'].value_counts().head(3)
+                context_info.append(f"Top players: {', '.join([f'{player} ({count})' for player, count in top_players.items()])}")
+            
+            if 'goalie' in features_used or 'goalie_name' in features_used:
+                goalie_col = 'goalie_name' if 'goalie_name' in cluster_goals.columns else 'goalie'
+                top_goalies = cluster_goals[goalie_col].value_counts().head(3)
+                context_info.append(f"Goalies faced: {', '.join([f'{goalie} ({count})' for goalie, count in top_goalies.items()])}")
+            
+            if 'team_name' in cluster_goals.columns:
+                top_teams = cluster_goals['team_name'].value_counts().head(3)
+                context_info.append(f"Primary teams: {', '.join([f'{team} ({count})' for team, count in top_teams.items()])}")
+            
+            # Add temporal context if available
+            if 'month' in cluster_goals.columns:
+                months = cluster_goals['month'].value_counts().head(2)
+                month_names = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+                              7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
+                context_info.append(f"Peak months: {', '.join([f'{month_names.get(month, month)} ({count})' for month, count in months.items()])}")
+            
+            # Build the prompt (removed uniqueness checking to save context)
+            context_str = '; '.join(context_info)
+            
+            prompt = f"""You are tasked with creating a {level_name} name for a project which maps all of the goals scored in the NHL into a constellation map. The name should make sense based on the attributes of the goals contained in the cluster and should resemble names used in astronomy for our real universe.
+
+Some context for the goals in this grouping are: {context_str}.
+
+Please provide only the name (2-3 words maximum), no explanation. The name should be evocative of the goal characteristics and follow astronomical naming conventions."""
+            
+            # Generate name using Claude
+            response = anthropic_client.messages.create(
+                model="claude-3-5-haiku-20241022",
+                max_tokens=50,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            
+            # Update last API call time for rate limiting
+            self.last_api_call_time = time.time()
+            
+            generated_name = response.content[0].text.strip().replace('"', '').replace("'", "")
+            
+            # Ensure uniqueness
+            if generated_name in self.generated_names[level_name]:
+                # Add a suffix if name already exists
+                counter = 1
+                while f"{generated_name} {counter}" in self.generated_names[level_name]:
+                    counter += 1
+                generated_name = f"{generated_name} {counter}"
+            
+            self.generated_names[level_name].add(generated_name)
+            logger.info(f"Generated {level_name} name: '{generated_name}'")
+            return generated_name
+            
+        except Exception as e:
+            logger.warning(f"Failed to generate AI name for {level_name}: {e}")
+            # Fallback to generic naming
+            base_name = f"{level_name}_{len(self.generated_names[level_name])}"
+            self.generated_names[level_name].add(base_name)
+            return base_name
     
     def load_and_prepare_data(self, csv_path='data/nhl_goals_with_names.csv'):
         """Load and prepare goal data for sequential clustering"""
@@ -264,24 +405,24 @@ class SequentialHierarchicalClusterer:
         feature_data = data[features].copy()
         
         if method == 'categorical':
-            return self._categorical_clustering(feature_data, features, goal_indices, parent_cluster_id)
+            return self._categorical_clustering(feature_data, features, goal_indices, parent_cluster_id, level_config)
         elif method == 'kmeans':
             n_clusters = level_config.get('n_clusters', 5)
-            return self._kmeans_clustering(feature_data, features, goal_indices, n_clusters)
+            return self._kmeans_clustering(feature_data, features, goal_indices, n_clusters, level_config)
         elif method == 'dbscan':
             return self._dbscan_clustering(feature_data, features, goal_indices, level_config)
         elif method == 'mixed_clustering':
             n_clusters = level_config.get('n_clusters', 8)
-            return self._mixed_clustering(feature_data, features, goal_indices, n_clusters)
+            return self._mixed_clustering(feature_data, features, goal_indices, n_clusters, level_config)
         else:
             logger.warning(f"    Unknown clustering method: {method}")
             return None
     
-    def _categorical_clustering(self, feature_data, features, goal_indices, parent_cluster_id='root'):
+    def _categorical_clustering(self, feature_data, features, goal_indices, parent_cluster_id='root', level_config=None):
         """Cluster by categorical features using Jaccard similarity (for player_name)"""
         if len(features) != 1 or features[0] != 'player_name':
             logger.warning(f"    Categorical clustering with Jaccard similarity only supports single 'player_name' feature")
-            return self._simple_categorical_clustering(feature_data, features, goal_indices)
+            return self._simple_categorical_clustering(feature_data, features, goal_indices, level_config)
         
         # Use Jaccard similarity for player clustering
         feature_data_reset = feature_data.reset_index(drop=True)
@@ -366,9 +507,21 @@ class SequentialHierarchicalClusterer:
             
             if len(cluster_goal_indices) > 0:
                 # Create unique cluster ID that includes parent cluster to avoid collisions
-                primary_player_short = similar_players[0][:12] if similar_players[0] else 'unknown'
-                parent_short = parent_cluster_id.split('.')[-1] if parent_cluster_id != 'root' else 'root'
-                clusters[f"jaccard_{parent_short}_{cluster_counter}_{primary_player_short}"] = {
+                if level_config and level_config.get('level_name'):
+                    # Generate AI name for this cluster
+                    cluster_goals_df = self.goals_df.iloc[cluster_goal_indices]
+                    ai_name = self.generate_cluster_name(
+                        level_config['level_name'], 
+                        cluster_goals_df, 
+                        features
+                    )
+                else:
+                    # Fallback to old naming if no level_config
+                    primary_player_short = similar_players[0][:12] if similar_players[0] else 'unknown'
+                    parent_short = parent_cluster_id.split('.')[-1] if parent_cluster_id != 'root' else 'root'
+                    ai_name = f"jaccard_{parent_short}_{cluster_counter}_{primary_player_short}"
+                
+                clusters[ai_name] = {
                     'goal_indices': cluster_goal_indices,
                     'center': {
                         'primary_player': similar_players[0],
@@ -388,8 +541,20 @@ class SequentialHierarchicalClusterer:
                 misc_goal_indices.extend(player_indices)
             
             if len(misc_goal_indices) > 0:
-                parent_short = parent_cluster_id.split('.')[-1] if parent_cluster_id != 'root' else 'root'
-                clusters[f"jaccard_{parent_short}_{cluster_counter}_miscellaneous"] = {
+                if level_config and level_config.get('level_name'):
+                    # Generate AI name for miscellaneous cluster
+                    cluster_goals_df = self.goals_df.iloc[misc_goal_indices]
+                    ai_name = self.generate_cluster_name(
+                        level_config['level_name'], 
+                        cluster_goals_df, 
+                        features
+                    )
+                else:
+                    # Fallback to old naming
+                    parent_short = parent_cluster_id.split('.')[-1] if parent_cluster_id != 'root' else 'root'
+                    ai_name = f"jaccard_{parent_short}_{cluster_counter}_miscellaneous"
+                
+                clusters[ai_name] = {
                     'goal_indices': misc_goal_indices,
                     'center': {
                         'primary_player': 'miscellaneous',
@@ -474,7 +639,7 @@ class SequentialHierarchicalClusterer:
         
         return h[len1 + 1][len2 + 1]
     
-    def _simple_categorical_clustering(self, feature_data, features, goal_indices):
+    def _simple_categorical_clustering(self, feature_data, features, goal_indices, level_config=None):
         """Fallback simple categorical clustering for non-player features"""
         clusters = {}
         feature_data_reset = feature_data.reset_index(drop=True)
@@ -489,7 +654,19 @@ class SequentialHierarchicalClusterer:
                 cluster_goal_indices = [goal_indices[j] for j in local_indices]
                 
                 if len(cluster_goal_indices) > 0:
-                    clusters[f"cat_{i}_{str(value)[:10]}"] = {
+                    if level_config and level_config.get('level_name'):
+                        # Generate AI name for this cluster
+                        cluster_goals_df = self.goals_df.iloc[cluster_goal_indices]
+                        ai_name = self.generate_cluster_name(
+                            level_config['level_name'], 
+                            cluster_goals_df, 
+                            features
+                        )
+                    else:
+                        # Fallback to old naming if no level_config
+                        ai_name = f"cat_{i}_{str(value)[:10]}"
+                    
+                    clusters[ai_name] = {
                         'goal_indices': cluster_goal_indices,
                         'center': {'categorical_value': value}
                     }
@@ -497,7 +674,7 @@ class SequentialHierarchicalClusterer:
         logger.info(f"    Created {len(clusters)} simple categorical clusters")
         return clusters
     
-    def _kmeans_clustering(self, feature_data, features, goal_indices, n_clusters):
+    def _kmeans_clustering(self, feature_data, features, goal_indices, n_clusters, level_config):
         """Cluster using K-means"""
         # Fill missing values and scale features
         feature_data_clean = feature_data.fillna(0)
@@ -532,7 +709,15 @@ class SequentialHierarchicalClusterer:
                 # Calculate cluster center in original feature space
                 cluster_center = feature_data_clean.iloc[mask].mean().to_dict()
                 
-                clusters[f"k{cluster_id}"] = {
+                # Generate AI name for this cluster
+                cluster_goals_df = self.goals_df.iloc[cluster_goal_indices]
+                ai_name = self.generate_cluster_name(
+                    level_config['level_name'], 
+                    cluster_goals_df, 
+                    features
+                )
+                
+                clusters[ai_name] = {
                     'goal_indices': cluster_goal_indices,
                     'center': cluster_center
                 }
@@ -577,7 +762,7 @@ class SequentialHierarchicalClusterer:
         logger.info(f"    Created {len(clusters)} DBSCAN clusters ({sum(cluster_labels == -1)} noise points)")
         return clusters
     
-    def _mixed_clustering(self, feature_data, features, goal_indices, n_clusters):
+    def _mixed_clustering(self, feature_data, features, goal_indices, n_clusters, level_config):
         """Mixed clustering for spatial coordinates and categorical features (x, y, shot_type)"""
         # Prepare all features including encoded shot_type
         spatial_data = feature_data[['x', 'y']].fillna(0).copy()
@@ -626,7 +811,15 @@ class SequentialHierarchicalClusterer:
                     'dominant_shot_type': cluster_data['shot_type'].mode().iloc[0] if not cluster_data['shot_type'].mode().empty else 'unknown'
                 }
                 
-                clusters[f"mixed_{cluster_id}"] = {
+                # Generate AI name for this cluster
+                cluster_goals_df = self.goals_df.iloc[cluster_goal_indices]
+                ai_name = self.generate_cluster_name(
+                    level_config['level_name'], 
+                    cluster_goals_df, 
+                    features
+                )
+                
+                clusters[ai_name] = {
                     'goal_indices': cluster_goal_indices,
                     'center': cluster_center
                 }

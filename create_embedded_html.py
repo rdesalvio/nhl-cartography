@@ -57,6 +57,105 @@ def create_embedded_constellation_html():
             max-width: 350px;
         }}
         
+        .search-panel {{
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px;
+            width: 350px;
+            max-width: 90vw;
+            z-index: 1001;
+        }}
+        
+        .search-container {{
+            position: relative;
+        }}
+        
+        .search-input {{
+            width: calc(100% - 24px);
+            padding: 10px 40px 10px 12px;
+            background: rgba(20, 20, 30, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }}
+        
+        .search-input:focus {{
+            border-color: #ffd700;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }}
+        
+        .search-clear {{
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #ffd700;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 2px;
+        }}
+        
+        .search-suggestions {{
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(10, 10, 20, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            z-index: 1002;
+            display: none;
+        }}
+        
+        .suggestion-item {{
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background-color 0.2s ease;
+        }}
+        
+        .suggestion-item:hover, .suggestion-item.highlighted {{
+            background: rgba(255, 215, 0, 0.2);
+        }}
+        
+        .suggestion-name {{
+            color: white;
+            font-weight: bold;
+        }}
+        
+        .suggestion-type {{
+            color: #ffd700;
+            font-size: 12px;
+            margin-left: 8px;
+        }}
+        
+        .suggestion-stats {{
+            color: #aaa;
+            font-size: 11px;
+            margin-top: 2px;
+        }}
+        
+        .search-active-indicator {{
+            margin-top: 10px;
+            padding: 8px;
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 4px;
+            color: #ffd700;
+            font-size: 12px;
+            display: none;
+        }}
+        
         .title-panel h1 {{
             margin: 0 0 10px 0;
             font-size: 28px;
@@ -179,6 +278,10 @@ def create_embedded_constellation_html():
             white-space: nowrap;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
             transition: opacity 0.3s ease-in-out;
+            text-align: center;
+            transform: translateX(-50%);
+            display: inline-block;
+            cursor: pointer;
         }}
         
         .galaxy-label {{
@@ -342,6 +445,19 @@ def create_embedded_constellation_html():
         <p>🎯 16,221 goals from 2023+ seasons</p>
     </div>
     
+    <div class="ui-panel search-panel">
+        <h3 style="margin: 0 0 10px 0; color: #ffd700; font-size: 16px;">🔍 Player Search</h3>
+        <div class="search-container">
+            <input type="text" id="player-search" class="search-input" placeholder="Search players and goalies..." autocomplete="off">
+            <button id="search-clear" class="search-clear" style="display: none;">✕</button>
+            <div id="search-suggestions" class="search-suggestions"></div>
+        </div>
+        <div id="search-active" class="search-active-indicator">
+            <div>🎯 <span id="selected-player"></span> selected</div>
+            <div style="margin-top: 4px; font-size: 10px;">Lines connect visible elements</div>
+        </div>
+    </div>
+    
     <div class="ui-panel controls-panel">
         <div class="panel-title">Navigation Guide</div>
         <p>🔍 <strong>Zoom:</strong> Mouse wheel or +/- controls</p>
@@ -351,18 +467,22 @@ def create_embedded_constellation_html():
     </div>
     
     <div class="ui-panel legend-panel">
-        <div class="panel-title">Celestial Objects</div>
+        <div class="panel-title">Color Legend</div>
         <div class="legend-item">
             <div class="legend-color" style="background: radial-gradient(circle, #ff4444 30%, #ff6666 100%);"></div>
-            <span><strong>Galaxies</strong> - Spatial clusters (12)</span>
+            <span><strong>Galaxies</strong> - Spatial + shot type clusters</span>
         </div>
         <div class="legend-item">
             <div class="legend-color" style="background: radial-gradient(circle, #ffd700 30%, #ffed4a 100%);"></div>
-            <span><strong>Constellations</strong> - Game context (96)</span>
+            <span><strong>Clusters</strong> - Game context groups</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: radial-gradient(circle, #ffa500 30%, #ffb84d 100%);"></div>
+            <span><strong>Solar Systems</strong> - Goalie groupings</span>
         </div>
         <div class="legend-item">
             <div class="legend-color" style="background: radial-gradient(circle, #87ceeb 30%, #b6e5ff 100%);"></div>
-            <span><strong>Stars</strong> - Player goals (2,767)</span>
+            <span><strong>Stars</strong> - Individual goals</span>
         </div>
     </div>
     
@@ -394,7 +514,7 @@ def create_embedded_constellation_html():
         const map = L.map('map', {{
             crs: customCRS,
             center: [0, 0],
-            zoom: 1,
+            zoom: 0.5,
             minZoom: 0,
             maxZoom: 6,
             zoomControl: true,
@@ -426,9 +546,291 @@ def create_embedded_constellation_html():
         
         console.log('Processing:', galaxies.length, 'galaxies,', clusters.length, 'clusters,', solarSystems.length, 'solar systems,', stars.length, 'stars');
         
+        // Build search indexes for players and goalies
+        const playerIndex = new Map();
+        const goalieIndex = new Map();
+        
+        stars.forEach(star => {{
+            const props = star.properties;
+            const playerName = props.player_name;
+            const goalieName = props.goalie_name;
+            
+            // Index players
+            if (playerName && playerName !== 'Unknown') {{
+                if (!playerIndex.has(playerName)) {{
+                    playerIndex.set(playerName, {{
+                        name: playerName,
+                        type: 'player',
+                        goals: [],
+                        teams: new Set()
+                    }});
+                }}
+                const playerData = playerIndex.get(playerName);
+                playerData.goals.push(star);
+                if (props.team_name && props.team_name !== 'Unknown') {{
+                    playerData.teams.add(props.team_name);
+                }}
+            }}
+            
+            // Index goalies
+            if (goalieName && goalieName !== 'Unknown') {{
+                if (!goalieIndex.has(goalieName)) {{
+                    goalieIndex.set(goalieName, {{
+                        name: goalieName,
+                        type: 'goalie',
+                        goalsAgainst: [],
+                        teams: new Set()
+                    }});
+                }}
+                const goalieData = goalieIndex.get(goalieName);
+                goalieData.goalsAgainst.push(star);
+            }}
+        }});
+        
+        // Build combined search list
+        const searchData = [];
+        playerIndex.forEach(player => {{
+            searchData.push({{
+                name: player.name,
+                type: 'Player',
+                count: player.goals.length,
+                teams: Array.from(player.teams).join(', '),
+                data: player
+            }});
+        }});
+        goalieIndex.forEach(goalie => {{
+            searchData.push({{
+                name: goalie.name,
+                type: 'Goalie',
+                count: goalie.goalsAgainst.length,
+                teams: 'Multiple teams',
+                data: goalie
+            }});
+        }});
+        
+        // Sort by goal count (descending)
+        searchData.sort((a, b) => b.count - a.count);
+        
+        console.log(`Indexed ${{playerIndex.size}} players and ${{goalieIndex.size}} goalies`);
+        
+        // Function to get hierarchical statistics for celestial objects
+        function getHierarchicalStats(objectName, level) {{
+            let stats = {{
+                name: objectName,
+                level: level,
+                clusters: 0,
+                solarSystems: 0,
+                stars: 0,
+                totalGoals: 0,
+                topPlayers: new Map(),
+                topGoalies: new Map(),
+                teams: new Set(),
+                shotTypes: new Map(),
+                periods: new Map()
+            }};
+            
+            if (level === 'galaxy') {{
+                // Count clusters, solar systems, and stars within this galaxy
+                clusters.forEach(cluster => {{
+                    if (cluster.properties.name.startsWith(objectName + '.')) {{
+                        stats.clusters++;
+                    }}
+                }});
+                
+                solarSystems.forEach(system => {{
+                    if (system.properties.name.startsWith(objectName + '.')) {{
+                        stats.solarSystems++;
+                    }}
+                }});
+                
+                stars.forEach(star => {{
+                    if (star.properties.galaxy === objectName) {{
+                        stats.stars++;
+                        stats.totalGoals++;
+                        
+                        // Collect player stats
+                        const playerName = star.properties.player_name;
+                        if (playerName && playerName !== 'unknown') {{
+                            stats.topPlayers.set(playerName, (stats.topPlayers.get(playerName) || 0) + 1);
+                        }}
+                        
+                        // Collect goalie stats
+                        const goalieName = star.properties.goalie_name;
+                        if (goalieName && goalieName !== 'unknown') {{
+                            stats.topGoalies.set(goalieName, (stats.topGoalies.get(goalieName) || 0) + 1);
+                        }}
+                        
+                        // Collect team stats
+                        if (star.properties.team_name) {{
+                            stats.teams.add(star.properties.team_name);
+                        }}
+                        
+                        // Collect shot type stats
+                        if (star.properties.shot_type) {{
+                            stats.shotTypes.set(star.properties.shot_type, (stats.shotTypes.get(star.properties.shot_type) || 0) + 1);
+                        }}
+                        
+                        // Collect period stats
+                        if (star.properties.period) {{
+                            stats.periods.set(star.properties.period, (stats.periods.get(star.properties.period) || 0) + 1);
+                        }}
+                    }}
+                }});
+            }} else if (level === 'cluster') {{
+                // Count solar systems and stars within this cluster
+                solarSystems.forEach(system => {{
+                    if (system.properties.name.startsWith(objectName + '.')) {{
+                        stats.solarSystems++;
+                    }}
+                }});
+                
+                stars.forEach(star => {{
+                    if (star.properties.cluster === objectName) {{
+                        stats.stars++;
+                        stats.totalGoals++;
+                        
+                        // Collect same stats as galaxy level
+                        const playerName = star.properties.player_name;
+                        if (playerName && playerName !== 'unknown') {{
+                            stats.topPlayers.set(playerName, (stats.topPlayers.get(playerName) || 0) + 1);
+                        }}
+                        
+                        const goalieName = star.properties.goalie_name;
+                        if (goalieName && goalieName !== 'unknown') {{
+                            stats.topGoalies.set(goalieName, (stats.topGoalies.get(goalieName) || 0) + 1);
+                        }}
+                        
+                        if (star.properties.team_name) {{
+                            stats.teams.add(star.properties.team_name);
+                        }}
+                        
+                        if (star.properties.shot_type) {{
+                            stats.shotTypes.set(star.properties.shot_type, (stats.shotTypes.get(star.properties.shot_type) || 0) + 1);
+                        }}
+                        
+                        if (star.properties.period) {{
+                            stats.periods.set(star.properties.period, (stats.periods.get(star.properties.period) || 0) + 1);
+                        }}
+                    }}
+                }});
+            }} else if (level === 'solar system') {{
+                // Count stars within this solar system
+                stars.forEach(star => {{
+                    if (star.properties.solar_system === objectName) {{
+                        stats.stars++;
+                        stats.totalGoals++;
+                        
+                        // Collect same stats
+                        const playerName = star.properties.player_name;
+                        if (playerName && playerName !== 'unknown') {{
+                            stats.topPlayers.set(playerName, (stats.topPlayers.get(playerName) || 0) + 1);
+                        }}
+                        
+                        const goalieName = star.properties.goalie_name;
+                        if (goalieName && goalieName !== 'unknown') {{
+                            stats.topGoalies.set(goalieName, (stats.topGoalies.get(goalieName) || 0) + 1);
+                        }}
+                        
+                        if (star.properties.team_name) {{
+                            stats.teams.add(star.properties.team_name);
+                        }}
+                        
+                        if (star.properties.shot_type) {{
+                            stats.shotTypes.set(star.properties.shot_type, (stats.shotTypes.get(star.properties.shot_type) || 0) + 1);
+                        }}
+                        
+                        if (star.properties.period) {{
+                            stats.periods.set(star.properties.period, (stats.periods.get(star.properties.period) || 0) + 1);
+                        }}
+                    }}
+                }});
+            }}
+            
+            return stats;
+        }}
+        
+        // Function to create hierarchical popup content
+        function createHierarchicalPopup(stats) {{
+            let content = `<div style="max-width: 300px;">
+                <h3 style="margin: 0 0 10px 0; color: #ffd700; text-align: center;">
+                    🌌 ${{stats.name}}
+                </h3>
+                <div style="font-size: 12px; color: #ccc; text-align: center; margin-bottom: 15px;">
+                    ${{stats.level.charAt(0).toUpperCase() + stats.level.slice(1)}}
+                </div>`;
+            
+            // Hierarchical composition
+            content += `<div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                <strong>📊 Composition:</strong><br>`;
+            
+            if (stats.level === 'galaxy') {{
+                content += `🌟 Clusters: ${{stats.clusters}}<br>`;
+                content += `🪐 Solar Systems: ${{stats.solarSystems}}<br>`;
+            }} else if (stats.level === 'cluster') {{
+                content += `🪐 Solar Systems: ${{stats.solarSystems}}<br>`;
+            }}
+            content += `⭐ Stars (Goals): ${{stats.stars}}<br>`;
+            content += `</div>`;
+            
+            // Top players
+            if (stats.topPlayers.size > 0) {{
+                const topPlayers = Array.from(stats.topPlayers.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 3);
+                content += `<div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                    <strong>🏒 Top Scorers:</strong><br>`;
+                topPlayers.forEach(([player, count]) => {{
+                    content += `• ${{player}}: ${{count}} goals<br>`;
+                }});
+                content += `</div>`;
+            }}
+            
+            // Top goalies
+            if (stats.topGoalies.size > 0) {{
+                const topGoalies = Array.from(stats.topGoalies.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 3);
+                content += `<div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                    <strong>🥅 Most Scored On:</strong><br>`;
+                topGoalies.forEach(([goalie, count]) => {{
+                    content += `• ${{goalie}}: ${{count}} goals<br>`;
+                }});
+                content += `</div>`;
+            }}
+            
+            // Teams involved
+            if (stats.teams.size > 0) {{
+                content += `<div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                    <strong>🏒 Teams:</strong><br>`;
+                const teamList = Array.from(stats.teams).slice(0, 5).join(', ');
+                content += `${{teamList}}${{stats.teams.size > 5 ? ` (+${{stats.teams.size - 5}} more)` : ''}}<br>`;
+                content += `</div>`;
+            }}
+            
+            // Shot types
+            if (stats.shotTypes.size > 0) {{
+                const topShotTypes = Array.from(stats.shotTypes.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 3);
+                content += `<div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px;">
+                    <strong>🎯 Shot Types:</strong><br>`;
+                topShotTypes.forEach(([shotType, count]) => {{
+                    content += `• ${{shotType}}: ${{count}}<br>`;
+                }});
+                content += `</div>`;
+            }}
+            
+            content += `</div>`;
+            return content;
+        }}
+        
         // Add galaxies (always visible)
         galaxies.forEach((galaxy, index) => {{
             const coord = [galaxy.geometry.coordinates[1], galaxy.geometry.coordinates[0]];
+            
+            // Get hierarchical stats for this galaxy
+            const galaxyStats = getHierarchicalStats(galaxy.properties.name, 'galaxy');
+            const hierarchicalPopup = createHierarchicalPopup(galaxyStats);
             
             // Galaxy marker
             const marker = L.marker(coord, {{
@@ -444,9 +846,19 @@ def create_embedded_constellation_html():
                 icon: L.divIcon({{
                     className: 'galaxy-label',
                     html: galaxy.properties.name,
-                    iconSize: [100, 25],
-                    iconAnchor: [50, -35]
+                    iconSize: null,
+                    iconAnchor: [0, -35]
                 }})
+            }});
+            
+            // Bind hierarchical popup to both marker and label
+            marker.bindPopup(hierarchicalPopup, {{
+                maxWidth: 350,
+                className: 'custom-popup'
+            }});
+            label.bindPopup(hierarchicalPopup, {{
+                maxWidth: 350,
+                className: 'custom-popup'
             }});
             
             marker.addTo(galaxyLayer);
@@ -456,6 +868,10 @@ def create_embedded_constellation_html():
         // Add clusters (visible at medium zoom)
         clusters.forEach(cluster => {{
             const coord = [cluster.geometry.coordinates[1], cluster.geometry.coordinates[0]];
+            
+            // Get hierarchical stats for this cluster
+            const clusterStats = getHierarchicalStats(cluster.properties.name, 'cluster');
+            const hierarchicalPopup = createHierarchicalPopup(clusterStats);
             
             const marker = L.marker(coord, {{
                 icon: L.divIcon({{
@@ -469,9 +885,19 @@ def create_embedded_constellation_html():
                 icon: L.divIcon({{
                     className: 'cluster-label',
                     html: cluster.properties.name.split('.')[1] || 'cluster',
-                    iconSize: [80, 20],
-                    iconAnchor: [40, -25]
+                    iconSize: null,
+                    iconAnchor: [0, -25]
                 }})
+            }});
+            
+            // Bind hierarchical popup to both marker and label
+            marker.bindPopup(hierarchicalPopup, {{
+                maxWidth: 350,
+                className: 'custom-popup'
+            }});
+            label.bindPopup(hierarchicalPopup, {{
+                maxWidth: 350,
+                className: 'custom-popup'
             }});
             
             marker.addTo(clusterLayer);
@@ -530,8 +956,12 @@ def create_embedded_constellation_html():
             
             systemPopup += `<div class="goal-detail"><em>Zoom in to see individual goals</em></div></div>`;
             
-            marker.bindPopup(systemPopup, {{
-                maxWidth: 300,
+            // Get hierarchical stats for this solar system
+            const solarSystemStats = getHierarchicalStats(solarSystem.properties.name, 'solar system');
+            const hierarchicalPopup = createHierarchicalPopup(solarSystemStats);
+            
+            marker.bindPopup(hierarchicalPopup, {{
+                maxWidth: 350,
                 className: 'custom-popup'
             }});
             
@@ -539,9 +969,15 @@ def create_embedded_constellation_html():
                 icon: L.divIcon({{
                     className: 'solar-system-label',
                     html: solarSystem.properties.name.split('.')[2] || 'system',
-                    iconSize: [60, 16],
-                    iconAnchor: [30, -20]
+                    iconSize: null,
+                    iconAnchor: [0, -20]
                 }})
+            }});
+            
+            // Bind hierarchical popup to label as well
+            label.bindPopup(hierarchicalPopup, {{
+                maxWidth: 350,
+                className: 'custom-popup'
             }});
             
             marker.addTo(solarSystemLayer);
@@ -692,7 +1128,7 @@ def create_embedded_constellation_html():
         
         // Set initial view to show all galaxies
         const bounds = L.latLngBounds(galaxies.map(g => [g.geometry.coordinates[1], g.geometry.coordinates[0]]));
-        map.fitBounds(bounds.pad(0.15));
+        map.fitBounds(bounds.pad(0.3));
         
         // Handle zoom-based layer visibility
         function updateLayerVisibility() {{
@@ -794,6 +1230,223 @@ def create_embedded_constellation_html():
         map.on('moveend', debouncedRenderStars);
         map.on('zoomend', debouncedRenderStars);
         map.on('zoom', updateLayerVisibility);
+        
+        // Search functionality
+        let selectedPlayer = null;
+        let connectionLines = L.layerGroup().addTo(map);
+        
+        const searchInput = document.getElementById('player-search');
+        const searchSuggestions = document.getElementById('search-suggestions');
+        const searchClear = document.getElementById('search-clear');
+        const searchActive = document.getElementById('search-active');
+        const selectedPlayerSpan = document.getElementById('selected-player');
+        
+        let currentSuggestions = [];
+        let highlightedIndex = -1;
+        
+        function showSuggestions(query) {{
+            if (!query || query.length < 2) {{
+                searchSuggestions.style.display = 'none';
+                return;
+            }}
+            
+            const filtered = searchData.filter(item => 
+                item.name.toLowerCase().includes(query.toLowerCase())
+            ).slice(0, 10); // Limit to 10 suggestions
+            
+            if (filtered.length === 0) {{
+                searchSuggestions.style.display = 'none';
+                return;
+            }}
+            
+            currentSuggestions = filtered;
+            highlightedIndex = -1;
+            
+            searchSuggestions.innerHTML = filtered.map((item, index) => `
+                <div class="suggestion-item" data-index="${{index}}">
+                    <div class="suggestion-name">${{item.name}}<span class="suggestion-type">${{item.type}}</span></div>
+                    <div class="suggestion-stats">${{item.count}} goals • ${{item.teams}}</div>
+                </div>
+            `).join('');
+            
+            searchSuggestions.style.display = 'block';
+            
+            // Add click handlers
+            searchSuggestions.querySelectorAll('.suggestion-item').forEach((item, index) => {{
+                item.addEventListener('click', () => selectPlayer(filtered[index]));
+            }});
+        }}
+        
+        function selectPlayer(playerInfo) {{
+            selectedPlayer = playerInfo;
+            searchInput.value = playerInfo.name;
+            searchSuggestions.style.display = 'none';
+            searchClear.style.display = 'block';
+            searchActive.style.display = 'block';
+            selectedPlayerSpan.textContent = `${{playerInfo.name}} (${{playerInfo.type}})`;
+            
+            drawConnectionLines();
+        }}
+        
+        function clearSearch() {{
+            selectedPlayer = null;
+            searchInput.value = '';
+            searchSuggestions.style.display = 'none';
+            searchClear.style.display = 'none';
+            searchActive.style.display = 'none';
+            connectionLines.clearLayers();
+        }}
+        
+        function drawConnectionLines() {{
+            connectionLines.clearLayers();
+            
+            if (!selectedPlayer) return;
+            
+            const zoom = map.getZoom();
+            const bounds = map.getBounds();
+            const relevantGoals = selectedPlayer.data.type === 'player' ? 
+                selectedPlayer.data.goals : selectedPlayer.data.goalsAgainst;
+            
+            // Find visible components containing this player/goalie (viewport-only)
+            const visibleComponents = [];
+            
+            if (zoom >= 4) {{
+                // Individual goals level - connect rendered stars in viewport
+                relevantGoals.forEach((goal, index) => {{
+                    if (renderedStars.has(stars.indexOf(goal))) {{
+                        const coord = [goal.geometry.coordinates[1], goal.geometry.coordinates[0]];
+                        if (bounds.contains(coord)) {{
+                            visibleComponents.push(coord);
+                        }}
+                    }}
+                }});
+            }} else if (zoom >= 2) {{
+                // Solar system level - connect solar systems containing this player in viewport
+                const solarSystemsWithPlayer = new Set();
+                relevantGoals.forEach(goal => {{
+                    const solarSystemName = goal.properties.solar_system;
+                    if (solarSystemName) {{
+                        solarSystemsWithPlayer.add(solarSystemName);
+                    }}
+                }});
+                
+                solarSystems.forEach(system => {{
+                    if (solarSystemsWithPlayer.has(system.properties.name)) {{
+                        const coord = [system.geometry.coordinates[1], system.geometry.coordinates[0]];
+                        if (bounds.contains(coord)) {{
+                            visibleComponents.push(coord);
+                        }}
+                    }}
+                }});
+            }} else if (zoom >= 1) {{
+                // Cluster level - connect clusters containing this player in viewport
+                const clustersWithPlayer = new Set();
+                relevantGoals.forEach(goal => {{
+                    const clusterName = goal.properties.cluster;
+                    if (clusterName) {{
+                        clustersWithPlayer.add(clusterName);
+                    }}
+                }});
+                
+                clusters.forEach(cluster => {{
+                    if (clustersWithPlayer.has(cluster.properties.name)) {{
+                        const coord = [cluster.geometry.coordinates[1], cluster.geometry.coordinates[0]];
+                        if (bounds.contains(coord)) {{
+                            visibleComponents.push(coord);
+                        }}
+                    }}
+                }});
+            }} else {{
+                // Galaxy level - connect galaxies containing this player in viewport
+                const galaxiesWithPlayer = new Set();
+                relevantGoals.forEach(goal => {{
+                    const galaxyName = goal.properties.galaxy;
+                    if (galaxyName) {{
+                        galaxiesWithPlayer.add(galaxyName);
+                    }}
+                }});
+                
+                galaxies.forEach(galaxy => {{
+                    if (galaxiesWithPlayer.has(galaxy.properties.name)) {{
+                        const coord = [galaxy.geometry.coordinates[1], galaxy.geometry.coordinates[0]];
+                        if (bounds.contains(coord)) {{
+                            visibleComponents.push(coord);
+                        }}
+                    }}
+                }});
+            }}
+            
+            // Draw lines between visible components in viewport
+            if (visibleComponents.length > 1) {{
+                for (let i = 0; i < visibleComponents.length - 1; i++) {{
+                    for (let j = i + 1; j < visibleComponents.length; j++) {{
+                        const line = L.polyline([visibleComponents[i], visibleComponents[j]], {{
+                            color: '#ffd700',
+                            weight: 2,
+                            opacity: 0.6,
+                            dashArray: '5, 10'
+                        }});
+                        connectionLines.addLayer(line);
+                    }}
+                }}
+                
+                console.log(`Drew ${{connectionLines.getLayers().length}} connection lines for ${{selectedPlayer.name}} (viewport only)`);
+            }}
+        }}
+        
+        // Search input handlers
+        searchInput.addEventListener('input', (e) => {{
+            const query = e.target.value;
+            showSuggestions(query);
+            if (query) {{
+                searchClear.style.display = 'block';
+            }} else {{
+                searchClear.style.display = 'none';
+                clearSearch();
+            }}
+        }});
+        
+        searchInput.addEventListener('keydown', (e) => {{
+            if (e.key === 'ArrowDown') {{
+                e.preventDefault();
+                highlightedIndex = Math.min(highlightedIndex + 1, currentSuggestions.length - 1);
+                updateHighlight();
+            }} else if (e.key === 'ArrowUp') {{
+                e.preventDefault();
+                highlightedIndex = Math.max(highlightedIndex - 1, -1);
+                updateHighlight();
+            }} else if (e.key === 'Enter') {{
+                e.preventDefault();
+                if (highlightedIndex >= 0 && currentSuggestions[highlightedIndex]) {{
+                    selectPlayer(currentSuggestions[highlightedIndex]);
+                }}
+            }} else if (e.key === 'Escape') {{
+                searchSuggestions.style.display = 'none';
+            }}
+        }});
+        
+        function updateHighlight() {{
+            const items = searchSuggestions.querySelectorAll('.suggestion-item');
+            items.forEach((item, index) => {{
+                item.classList.toggle('highlighted', index === highlightedIndex);
+            }});
+        }}
+        
+        searchClear.addEventListener('click', clearSearch);
+        
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', (e) => {{
+            if (!e.target.closest('.search-container')) {{
+                searchSuggestions.style.display = 'none';
+            }}
+        }});
+        
+        // Redraw lines when zoom/pan changes
+        map.on('zoomend moveend', () => {{
+            if (selectedPlayer) {{
+                drawConnectionLines();
+            }}
+        }});
         
         // Initial update
         updateLayerVisibility();
