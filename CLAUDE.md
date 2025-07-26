@@ -11,6 +11,7 @@ NHL Cartography is a project that maps NHL goal locations in time and space. The
 - Tests are also welcome, although not required unless stated specifically. 
 - There are pieces of this project which will be done in a jupyter notebook, for those instances, we do not need testing code unless required to validate a prompt answer. 
 - Correctness of data is extremely important. I do not want to misrepresent data in any way
+- The project uses uv as the package manager. 
 
 ## Data Structure
 
