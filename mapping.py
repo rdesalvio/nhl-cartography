@@ -20,25 +20,49 @@ class ConstellationMapper:
         
         # Coordinate system parameters
         self.galaxy_radius = 1000  # Max radius for galaxy distribution
-        self.constellation_radius = 50  # Max radius for constellations within galaxy
-        self.star_radius = 25  # Max radius for stars within constellation
+        self.constellation_radius = 75  # Max radius for constellations within galaxy (reduced from 120)
+        self.star_radius = 45  # Max radius for stars within constellation (reduced from 80)
         
-    def load_clustering_results(self):
+    def load_clustering_results(self, specific_file=None):
         """Load the clustering results from sequential_clustering output"""
         try:
-            # Look for the most recent clustering results
             data_dir = "sequential_clustering"
-            mapping_files = [f for f in os.listdir(data_dir) if f.startswith("goal_hierarchy_mapping_")]
             
-            if not mapping_files:
-                raise FileNotFoundError("No clustering results found. Run sequential_clustering.py first.")
-            
-            # Get the most recent file
-            latest_file = sorted(mapping_files)[-1]
-            mapping_path = os.path.join(data_dir, latest_file)
+            if specific_file:
+                # Use specific file if provided
+                mapping_path = specific_file
+                if not os.path.exists(mapping_path):
+                    mapping_path = os.path.join(data_dir, specific_file)
+            else:
+                # Look for the most recent clustering results
+                mapping_files = [f for f in os.listdir(data_dir) if f.startswith("goal_hierarchy_mapping_")]
+                
+                if not mapping_files:
+                    raise FileNotFoundError("No clustering results found. Run sequential_clustering.py first.")
+                
+                # Get the most recent file
+                latest_file = sorted(mapping_files)[-1]
+                mapping_path = os.path.join(data_dir, latest_file)
             
             logger.info(f"Loading clustering results from: {mapping_path}")
             self.df = pd.read_csv(mapping_path)
+            
+            # Load original data to get missing score information
+            try:
+                original_data = pd.read_csv('data/nhl_goals_with_names.csv', low_memory=False)
+                logger.info(f"Loaded original data for score information")
+                
+                # Add missing score columns if they don't exist
+                if 'team_score' not in self.df.columns and 'team_score' in original_data.columns:
+                    # Create a mapping from goal_index to scores
+                    if 'goal_index' in self.df.columns:
+                        score_mapping = original_data.set_index(original_data.index)[['team_score', 'opponent_score']]
+                        self.df = self.df.merge(score_mapping, left_on='goal_index', right_index=True, how='left')
+                        logger.info(f"Added team_score and opponent_score columns from original data")
+                    else:
+                        logger.warning("No goal_index column found, cannot merge score data")
+            except Exception as e:
+                logger.warning(f"Could not load original score data: {e}")
             
             # Debug: Print data structure info
             logger.info(f"Data columns: {list(self.df.columns)}")
@@ -154,14 +178,38 @@ class ConstellationMapper:
                 tsne = TSNE(n_components=2, perplexity=perplexity, random_state=42)
                 positions_2d = tsne.fit_transform(features_scaled)
                 
-                # Scale positions to fit within galaxy region
-                positions_2d = positions_2d * self.constellation_radius / np.max(np.abs(positions_2d))
+                # Scale positions to fit within galaxy region with minimum separation
+                max_abs = np.max(np.abs(positions_2d))
+                if max_abs > 0:
+                    positions_2d = positions_2d * self.constellation_radius / max_abs
+                else:
+                    # Failsafe: if t-SNE produces identical positions, create manual spacing
+                    logger.warning(f"t-SNE produced identical positions for {len(clusters)} clusters in galaxy {galaxy}. Using manual spacing.")
+                    for i, cluster in enumerate(clusters):
+                        angle = (2 * np.pi * i) / len(clusters)
+                        radius = self.constellation_radius * 0.7
+                        positions_2d[i] = [radius * np.cos(angle), radius * np.sin(angle)]
                 
-                # Offset by galaxy center
+                # Ensure minimum separation between clusters and offset by galaxy center
+                min_separation = 10.0  # Minimum distance between cluster centers
                 for i, cluster in enumerate(clusters):
+                    base_x = galaxy_pos['x'] + positions_2d[i, 0]
+                    base_y = galaxy_pos['y'] + positions_2d[i, 1]
+                    
+                    # Check for conflicts with existing clusters and adjust if necessary
+                    final_x, final_y = base_x, base_y
+                    for existing_cluster, existing_pos in cluster_positions.items():
+                        if existing_pos['galaxy'] == galaxy:
+                            distance = np.sqrt((final_x - existing_pos['x'])**2 + (final_y - existing_pos['y'])**2)
+                            if distance < min_separation:
+                                # Push this cluster away from the existing one
+                                angle = np.arctan2(final_y - existing_pos['y'], final_x - existing_pos['x'])
+                                final_x = existing_pos['x'] + min_separation * np.cos(angle)
+                                final_y = existing_pos['y'] + min_separation * np.sin(angle)
+                    
                     cluster_positions[cluster] = {
-                        'x': galaxy_pos['x'] + positions_2d[i, 0],
-                        'y': galaxy_pos['y'] + positions_2d[i, 1],
+                        'x': final_x,
+                        'y': final_y,
                         'galaxy': galaxy
                     }
             else:
@@ -204,17 +252,15 @@ class ConstellationMapper:
                     system_center_x = cluster_pos['x']
                     system_center_y = cluster_pos['y']
                 else:
-                    # Multiple solar systems - distribute throughout cluster area
-                    # Use random positioning within cluster radius to fill the space
-                    max_radius = self.constellation_radius * 0.7
+                    # Multiple solar systems - distribute in a circular pattern with moderate spacing
+                    max_radius = self.constellation_radius * 0.6  # Reduced from 0.8 for closer spacing
                     
-                    # Generate random position within cluster circle
-                    # Use square root for uniform distribution within circle
-                    random_radius = max_radius * np.sqrt(np.random.uniform(0, 1))
-                    random_angle = np.random.uniform(0, 2 * np.pi)
+                    # Use structured circular positioning with better layering
+                    angle = (2 * np.pi * sys_idx) / num_solar_systems
+                    radius = max_radius * (0.4 + 0.6 * (sys_idx % 2))  # Two clear layers
                     
-                    system_center_x = cluster_pos['x'] + random_radius * np.cos(random_angle)
-                    system_center_y = cluster_pos['y'] + random_radius * np.sin(random_angle)
+                    system_center_x = cluster_pos['x'] + radius * np.cos(angle)
+                    system_center_y = cluster_pos['y'] + radius * np.sin(angle)
                 
                 # Create solar system entry
                 solar_system_name = f"{cluster}.{solar_system_raw_name}"
@@ -230,8 +276,8 @@ class ConstellationMapper:
         logger.info(f"Positioned {len(solar_system_positions)} solar systems")
     
     def create_star_positions(self):
-        """Create clustered star positions with individual goals positioned together"""
-        logger.info("Creating star positions with goal clustering...")
+        """Create tightly clustered star positions around solar system labels"""
+        logger.info("Creating tight star clusters around solar system centers...")
         
         star_positions = {}
         goal_positions = {}
@@ -267,29 +313,29 @@ class ConstellationMapper:
                 # No level 3 clustering - treat the whole solar system as one star cluster
                 star_clusters = [(system_raw_name, system_data)]
             
-            # Position star clusters around solar system center
+            # Position star clusters very close to solar system center for tight clustering
             num_star_clusters = len(star_clusters)
             if num_star_clusters == 0:
                 continue
                 
             for star_idx, (star_raw_name, star_goals) in enumerate(star_clusters):
-                # Position the center of this star cluster throughout solar system area
+                # Position star clusters in a very tight formation around solar system center
                 if num_star_clusters == 1:
-                    # Single cluster - place at solar system center
+                    # Single cluster - place exactly at solar system center
                     cluster_center_x = system_pos['x']
                     cluster_center_y = system_pos['y']
                 else:
-                    # Multiple clusters - distribute throughout solar system area
-                    # Use random positioning within solar system radius to fill the space
-                    max_radius = self.star_radius * 0.7
+                    # Multiple clusters - use very small radius to keep them close to solar system label
+                    # Dramatically reduced radius for tight clustering
+                    max_radius = 3.0  # Much smaller than before (was self.star_radius * 0.9 ≈ 40)
                     
-                    # Generate random position within solar system circle
-                    # Use square root for uniform distribution within circle
-                    random_radius = max_radius * np.sqrt(np.random.uniform(0, 1))
-                    random_angle = np.random.uniform(0, 2 * np.pi)
+                    # Simple circular distribution with minimal spread
+                    angle = (2 * np.pi * star_idx) / num_star_clusters
+                    # Use single ring with tight spacing - no dual ring system
+                    radius = max_radius
                     
-                    cluster_center_x = system_pos['x'] + random_radius * np.cos(random_angle)
-                    cluster_center_y = system_pos['y'] + random_radius * np.sin(random_angle)
+                    cluster_center_x = system_pos['x'] + radius * np.cos(angle)
+                    cluster_center_y = system_pos['y'] + radius * np.sin(angle)
                 
                 # Generate color for this cluster
                 total_possible_clusters = len(self.df['level_2_cluster'].unique()) * 2  # Estimate
@@ -308,14 +354,11 @@ class ConstellationMapper:
                     'goal_count': len(star_goals)
                 }
                 
-                # Position all goals in cluster at the same location with minimal jitter
-                cluster_size = len(star_goals)
-                
-                # All goals in cluster go to the same base position
+                # Position individual goals with minimal jitter to maintain tight clustering
                 for goal_idx, (_, goal) in enumerate(star_goals.iterrows()):
-                    # Add moderate random jitter for visual distinction while keeping cluster tight
-                    # This prevents overlap while keeping goals clearly grouped together
-                    jitter_radius = 1.5  # Increased jitter for better visibility
+                    # Extremely minimal jitter to keep stars visually together
+                    # This ensures stars appear as a tight cluster around the solar system label
+                    jitter_radius = 0.3  # Much smaller jitter (was 0.8)
                     jitter_angle = np.random.uniform(0, 2 * np.pi)
                     jitter_distance = np.random.uniform(0, jitter_radius)
                     
@@ -336,7 +379,7 @@ class ConstellationMapper:
         
         self.star_positions = star_positions
         self.goal_positions = goal_positions
-        logger.info(f"Positioned {len(star_positions)} star clusters with {len(goal_positions)} individual goals")
+        logger.info(f"Positioned {len(star_positions)} tight star clusters with {len(goal_positions)} individual goals")
     
     def create_geojson(self):
         """Convert positions to GeoJSON format"""
@@ -408,6 +451,7 @@ class ConstellationMapper:
                     "name": f"goal_{goal_id}",
                     "type": "star",
                     "solar_system": goal_pos['solar_system'],
+                    "level_2_cluster": goal_data.get('level_2_cluster', goal_pos['solar_system']),
                     "cluster": goal_pos['cluster'],
                     "galaxy": goal_pos['galaxy'],
                     "star_cluster": goal_pos['star_cluster'],
@@ -416,13 +460,14 @@ class ConstellationMapper:
                     "player_name": str(goal_data.get('player_name', 'Unknown')),
                     "team_name": str(goal_data.get('team_name', 'Unknown')),
                     "shot_type": str(goal_data.get('shot_type', 'Unknown')),
+                    "situation_code": str(goal_data.get('situation_code', 'Unknown')),
                     "game_date": str(goal_data.get('game_date', 'Unknown')),
                     "url": str(goal_data.get('url', '')),
                     "period": int(goal_data.get('period', 0)) if goal_data.get('period') is not None else 0,
                     "time": str(goal_data.get('time', 'Unknown')),
                     "team_score": int(goal_data.get('team_score', 0)) if goal_data.get('team_score') is not None else 0,
                     "opponent_score": int(goal_data.get('opponent_score', 0)) if goal_data.get('opponent_score') is not None else 0,
-                    "goalie_name": str(goal_data.get('goalie_name', 'Unknown')),
+                    "goalie_name": str(goal_data.get('goalie_name', 'Empty Net')),
                     "goal_x": goal_data.get('x', None),
                     "goal_y": goal_data.get('y', None)
                 }
@@ -544,12 +589,12 @@ class ConstellationMapper:
         
         logger.info(f"Visualization saved to: {viz_path}")
     
-    def run_complete_mapping(self):
+    def run_complete_mapping(self, specific_file=None):
         """Run the complete constellation mapping process"""
         logger.info("Starting NHL constellation mapping...")
         
         # Load data
-        if not self.load_clustering_results():
+        if not self.load_clustering_results(specific_file):
             return None
         
         # Create layouts
@@ -573,8 +618,13 @@ class ConstellationMapper:
 
 def main():
     """Run the constellation mapping"""
+    import sys
+    
+    # Check for command line argument
+    specific_file = sys.argv[1] if len(sys.argv) > 1 else None
+    
     mapper = ConstellationMapper()
-    results = mapper.run_complete_mapping()
+    results = mapper.run_complete_mapping(specific_file)
     
     if results:
         print(f"\nNHL Constellation Mapping Complete!")

@@ -40,7 +40,7 @@ try:
     import anthropic
     # API key will be read from environment variable ANTHROPIC_API_KEY
     anthropic_client = anthropic.Anthropic()
-    AI_AVAILABLE = True
+    AI_AVAILABLE = False
     logger.info("Anthropic Claude API configured successfully")
 except ImportError:
     AI_AVAILABLE = False

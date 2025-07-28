@@ -988,7 +988,7 @@ def create_embedded_constellation_html():
             }}
             
             // Index goalies
-            if (goalieName && goalieName !== 'Unknown') {{
+            if (goalieName && goalieName !== 'Empty Net') {{
                 if (!goalieIndex.has(goalieName)) {{
                     goalieIndex.set(goalieName, {{
                         name: goalieName,
@@ -1109,7 +1109,8 @@ def create_embedded_constellation_html():
                 topGoalies: new Map(),
                 teams: new Set(),
                 shotTypes: new Map(),
-                periods: new Map()
+                periods: new Map(),
+                situationCodes: new Map()
             }};
             
             if (level === 'galaxy') {{
@@ -1139,7 +1140,7 @@ def create_embedded_constellation_html():
                         
                         // Collect goalie stats
                         const goalieName = star.properties.goalie_name;
-                        if (goalieName && goalieName !== 'unknown') {{
+                        if (goalieName && goalieName !== 'Empty Net') {{
                             stats.topGoalies.set(goalieName, (stats.topGoalies.get(goalieName) || 0) + 1);
                         }}
                         
@@ -1156,6 +1157,11 @@ def create_embedded_constellation_html():
                         // Collect period stats
                         if (star.properties.period) {{
                             stats.periods.set(star.properties.period, (stats.periods.get(star.properties.period) || 0) + 1);
+                        }}
+                        
+                        // Collect situation code stats
+                        if (star.properties.situation_code) {{
+                            stats.situationCodes.set(star.properties.situation_code, (stats.situationCodes.get(star.properties.situation_code) || 0) + 1);
                         }}
                     }}
                 }});
@@ -1179,7 +1185,7 @@ def create_embedded_constellation_html():
                         }}
                         
                         const goalieName = star.properties.goalie_name;
-                        if (goalieName && goalieName !== 'unknown') {{
+                        if (goalieName && goalieName !== 'Empty Net') {{
                             stats.topGoalies.set(goalieName, (stats.topGoalies.get(goalieName) || 0) + 1);
                         }}
                         
@@ -1193,6 +1199,10 @@ def create_embedded_constellation_html():
                         
                         if (star.properties.period) {{
                             stats.periods.set(star.properties.period, (stats.periods.get(star.properties.period) || 0) + 1);
+                        }}
+                        
+                        if (star.properties.situation_code) {{
+                            stats.situationCodes.set(star.properties.situation_code, (stats.situationCodes.get(star.properties.situation_code) || 0) + 1);
                         }}
                     }}
                 }});
@@ -1210,7 +1220,7 @@ def create_embedded_constellation_html():
                         }}
                         
                         const goalieName = star.properties.goalie_name;
-                        if (goalieName && goalieName !== 'unknown') {{
+                        if (goalieName && goalieName !== 'Empty Net') {{
                             stats.topGoalies.set(goalieName, (stats.topGoalies.get(goalieName) || 0) + 1);
                         }}
                         
@@ -1224,6 +1234,10 @@ def create_embedded_constellation_html():
                         
                         if (star.properties.period) {{
                             stats.periods.set(star.properties.period, (stats.periods.get(star.properties.period) || 0) + 1);
+                        }}
+                        
+                        if (star.properties.situation_code) {{
+                            stats.situationCodes.set(star.properties.situation_code, (stats.situationCodes.get(star.properties.situation_code) || 0) + 1);
                         }}
                     }}
                 }});
@@ -1301,14 +1315,6 @@ def create_embedded_constellation_html():
                 content += `</div>`;
             }}
             
-            // Teams involved
-            if (stats.teams.size > 0) {{
-                content += `<div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                    <strong>🏒 Teams:</strong><br>`;
-                const teamList = Array.from(stats.teams).slice(0, 5).join(', ');
-                content += `${{teamList}}${{stats.teams.size > 5 ? ` (+${{stats.teams.size - 5}} more)` : ''}}<br>`;
-                content += `</div>`;
-            }}
             
             // Shot types
             if (stats.shotTypes.size > 0) {{
@@ -1319,6 +1325,19 @@ def create_embedded_constellation_html():
                     <strong>🎯 Shot Types:</strong><br>`;
                 topShotTypes.forEach(([shotType, count]) => {{
                     content += `• ${{shotType}}: ${{count}}<br>`;
+                }});
+                content += `</div>`;
+            }}
+            
+            // Situation codes
+            if (stats.situationCodes.size > 0) {{
+                const topSituationCodes = Array.from(stats.situationCodes.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 3);
+                content += `<div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                    <strong>⚡ Situations:</strong><br>`;
+                topSituationCodes.forEach(([situationCode, count]) => {{
+                    content += `• ${{situationCode}}: ${{count}}<br>`;
                 }});
                 content += `</div>`;
             }}
@@ -1454,7 +1473,7 @@ def create_embedded_constellation_html():
             
             // Add sample of goalies and players in this system
             if (starsInSystem.length > 0) {{
-                const goalies = [...new Set(starsInSystem.map(s => s.properties.goalie_name).filter(g => g && g !== 'Unknown'))];
+                const goalies = [...new Set(starsInSystem.map(s => s.properties.goalie_name).filter(g => g && g !== 'Empty Net'))];
                 const players = [...new Set(starsInSystem.map(s => s.properties.player_name).filter(p => p && p !== 'Unknown'))];
                 
                 if (goalies.length > 0) {{
@@ -1496,6 +1515,29 @@ def create_embedded_constellation_html():
             label.addTo(solarSystemLabelLayer);
         }});
         
+        // Solar system color mapping function
+        const solarSystemColors = new Map();
+        function getSolarSystemColor(solarSystem) {{
+            if (!solarSystemColors.has(solarSystem)) {{
+                // Generate consistent color for this solar system using a hash-based approach
+                let hash = 0;
+                for (let i = 0; i < solarSystem.length; i++) {{
+                    const char = solarSystem.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash; // Convert to 32-bit integer
+                }}
+                
+                // Convert hash to HSL color
+                const hue = Math.abs(hash) % 360;
+                const saturation = 70 + (Math.abs(hash) % 30); // 70-100%
+                const lightness = 50 + (Math.abs(hash) % 25); // 50-75%
+                
+                const color = `hsl(${{hue}}, ${{saturation}}%, ${{lightness}}%)`;
+                solarSystemColors.set(solarSystem, color);
+            }}
+            return solarSystemColors.get(solarSystem);
+        }}
+        
         // Optimized star rendering with viewport culling and lazy loading
         let renderedStars = new Set();
         let starMarkers = new Map();
@@ -1507,6 +1549,23 @@ def create_embedded_constellation_html():
             const bufferFactor = 0.5; // Render 50% beyond viewport for smooth panning
             const expandedBounds = bounds.pad(bufferFactor);
             
+            // At high zoom levels (5+), also filter by which solar systems are in the viewport
+            // This prevents showing stars from distant solar systems
+            const relevantSolarSystems = new Set();
+            if (map.getZoom() >= 5) {{
+                solarSystems.forEach(system => {{
+                    const solarCoord = [system.geometry.coordinates[1], system.geometry.coordinates[0]];
+                    if (expandedBounds.contains(solarCoord)) {{
+                        relevantSolarSystems.add(system.properties.name);
+                    }}
+                }});
+                
+                // Debug logging for the specific case mentioned
+                if (relevantSolarSystems.has('solar system_341')) {{
+                    console.log(`🔍 Zoom ${{map.getZoom().toFixed(1)}}: Found ${{relevantSolarSystems.size}} solar systems in viewport:`, Array.from(relevantSolarSystems).slice(0, 10));
+                }}
+            }}
+            
             // Collect stars to add/remove in batches
             const starsToAdd = [];
             const starsToRemove = [];
@@ -1515,9 +1574,16 @@ def create_embedded_constellation_html():
                 const coord = [star.geometry.coordinates[1], star.geometry.coordinates[0]];
                 const isInView = expandedBounds.contains(coord);
                 
-                if (isInView && !renderedStars.has(index)) {{
+                // Additional filtering at high zoom: only show stars from relevant solar systems
+                let shouldShow = isInView;
+                if (map.getZoom() >= 5 && relevantSolarSystems.size > 0) {{
+                    const starSolarSystem = star.properties.solar_system;
+                    shouldShow = isInView && relevantSolarSystems.has(starSolarSystem);
+                }}
+                
+                if (shouldShow && !renderedStars.has(index)) {{
                     starsToAdd.push({{star, index, coord}});
-                }} else if (!isInView && renderedStars.has(index)) {{
+                }} else if (!shouldShow && renderedStars.has(index)) {{
                     starsToRemove.push(index);
                 }}
             }});
@@ -1542,7 +1608,9 @@ def create_embedded_constellation_html():
                 
                 for (let i = start; i < end; i++) {{
                     const {{star, index, coord}} = starsToAdd[i];
-                    const clusterColor = star.properties.cluster_color || '#87ceeb';
+                    // Color stars by their solar system (level_2_cluster) instead of individual color
+                    const solarSystem = star.properties.level_2_cluster || star.properties.deepest_cluster?.split('.')[3] || 'unknown';
+                    const clusterColor = getSolarSystemColor(solarSystem);
                     
                     const marker = L.marker(coord, {{
                         icon: L.divIcon({{
@@ -1581,6 +1649,9 @@ def create_embedded_constellation_html():
                                     <strong>Shot Type:</strong> <span>${{props.shot_type || 'Unknown'}}</span>
                                 </div>
                                 <div class="goal-detail">
+                                    <strong>Situation:</strong> <span>${{props.situation_code || 'Unknown'}}</span>
+                                </div>
+                                <div class="goal-detail">
                                     <strong>Period:</strong> <span>${{props.period || 'Unknown'}}</span>
                                 </div>
                                 <div class="goal-detail">
@@ -1593,7 +1664,7 @@ def create_embedded_constellation_html():
                                     <strong>Date:</strong> <span>${{props.game_date || 'Unknown'}}</span>
                                 </div>
                                 <div class="goal-detail">
-                                    <strong>Goalie:</strong> <span>${{props.goalie_name || 'Unknown'}}</span>
+                                    <strong>Goalie:</strong> <span>${{props.goalie_name || 'Empty Net'}}</span>
                                 </div>
                                 <div class="goal-detail">
                                     <strong>Goal Location:</strong> <span>${{props.goal_x !== null && props.goal_y !== null ? `(x: ${{props.goal_x}}, y: ${{props.goal_y}})` : 'Not recorded'}}</span>
