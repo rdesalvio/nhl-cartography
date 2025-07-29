@@ -46,10 +46,32 @@ def get_zones(x, y):
     
     return 14
 
+def determine_situation_code(code, player_team, home_team):
+    is_home = player_team == home_team
+
+    # grab middle 2 characters
+    code_string = str(code)
+    if len(code_string) == 4:
+        code_string = code_string[1:3]
+    else:
+        code_string = code_string[0:2]
+
+    situation = ""
+    if is_home:
+        situation = f"{code_string[1]}v{code_string[0]}"
+    else:
+        situation = f"{code_string[0]}v{code_string[1]}"
+
+    # small check for 0v1
+    if situation == "0v1":
+        return "1v0"
+    
+    return situation
+
 def load_and_prepare_data():
     """Load the NHL goals dataset and prepare features for clustering"""
     print("Loading NHL goals dataset...")
-    df = pd.read_csv('data/nhl_goals_with_names.csv', low_memory=False)
+    df = pd.read_csv('data/nhl_goals_with_full_data.csv', low_memory=False)
     df['game_date'] = pd.to_datetime(df['game_date'])
     df = df[df['game_date'] >= '2023-10-09'].copy()
 
@@ -74,10 +96,61 @@ def load_and_prepare_data():
     
     df['score_diff'] = (df['team_score']-1) - df['opponent_score']
     df['situation_code'] = pd.to_numeric(df['situation_code'], errors='coerce')
+    # flatten situation code
+    situation_code_map = {
+        1551: 1551,
+        1451: 1451,
+        1541: 1541,
+        1441: 1441,
+        431: 1431,
+        651: 1651,
+        1560: 1561,
+        1331: 1331,
+        1351: 1351,
+        1531: 1531,
+        1431: 1431,
+        1341: 1341,
+        641: 1641,
+        1460: 1461,
+        1010: 1011,
+
+        101: 1011,
+        431: 1431,
+        541: 1541,
+        1550: 1551,
+        1340: 1341,
+        1350: 1351
+    }
+    reduced_situation_code_map = {
+        1551: 0,
+        1451: 2,
+        1541: 1,
+        1441: 0,
+        431: 1,
+        651: 1,
+        1560: 2,
+        1331: 0,
+        1351: 2,
+        1531: 1,
+        1431: 1,
+        1341: 2,
+        641: 1,
+        1460: 2,
+        1010: 3,
+
+        101: 3,
+        431: 1,
+        541: 1,
+        1550: 0,
+        1340: 2,
+        1350: 2
+    }
+    df['situation_code'] = df['situation_code'].apply(lambda x: situation_code_map[x])
+    df['situation'] = df.apply(lambda row: determine_situation_code(row['situation_code'], row['team_id'], row['home_team']), axis=1)
     
     # Select the specified features (excluding player_id and goalie integer IDs)
     feature_columns = ['shot_zone', 'shot_type', 'period', 'period_time', 
-                      'score_diff', 'situation_code']
+                      'score_diff', 'situation']
     
     # Create subset with only complete data for key features
     df_subset = df[feature_columns].copy()
@@ -160,7 +233,7 @@ def encode_categorical_features(df):
     print("Encoding categorical features...")
     
     df_encoded = df.copy()
-    categorical_columns = ['shot_type']
+    categorical_columns = ['shot_type', 'situation']
     label_encoders = {}
     
     for col in categorical_columns:
@@ -172,7 +245,7 @@ def encode_categorical_features(df):
             label_encoders[col] = le
     
     # Fill missing numerical values
-    numerical_columns = ['x', 'y', 'period', 'period_time',  'score_diff', 'situation_code', ]
+    numerical_columns = ['x', 'y', 'period', 'period_time',  'score_diff']
     for col in numerical_columns:
         if col in df_encoded.columns:
             df_encoded[col] = df_encoded[col].fillna(df_encoded[col].median())
@@ -454,10 +527,10 @@ def create_goal_hierarchy_mapping_FIXED(galaxy_labels, cluster_labels, solar_sys
     
     # Ensure proper column order to match sequential_clustering output
     base_columns = [
-        'team_id', 'player_id', 'period', 'time', 'situation_code', 'x', 'y', 'url',
+        'team_id', 'player_id', 'period', 'time', 'situation', 'situation_code', 'x', 'y', 'url',
         'shot_type', 'goalie', 'home_team_defending_side', 'score_diff',
         'game_date', 'team_name', 'player_name', 'goalie_name', 'time_minutes', 'time_seconds',
-        'period_time', 'month', 'day'
+        'period_time', 'month', 'day', 'home_team'
     ]
     
     hierarchy_columns = [
@@ -489,12 +562,12 @@ def main():
     
     # Step 1: Create galaxies using UMAP + HDBSCAN
     galaxy_labels = perform_galaxy_clustering(df_encoded)
+
+    # Step 3: Within each cluster, create solar systems by GOALIE name similarity (SWAPPED)
+    cluster_labels = cluster_by_goalie_similarity(df_original, df_encoded, galaxy_labels)
     
     # Step 2: Within each galaxy, cluster by PLAYER name similarity (SWAPPED)
-    cluster_labels = cluster_by_player_similarity(df_original, df_encoded, galaxy_labels)
-    
-    # Step 3: Within each cluster, create solar systems by GOALIE name similarity (SWAPPED)
-    solar_system_labels = cluster_by_goalie_similarity(df_original, df_encoded, cluster_labels)
+    solar_system_labels = cluster_by_player_similarity(df_original, df_encoded, cluster_labels)
     
     # Create goal hierarchy mapping with FIXED star assignments
     mapping_df = create_goal_hierarchy_mapping_FIXED(galaxy_labels, cluster_labels, solar_system_labels, df_encoded, df_original)

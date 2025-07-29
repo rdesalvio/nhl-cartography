@@ -45,10 +45,28 @@ def get_zones(x, y):
     
     return 14
 
+def determine_situation_code(code, player_team, home_team):
+    is_home = player_team == home_team
+
+    # grab middle 2 characters
+    code_string = str(code)
+    if len(code_string) == 4:
+        code_string = code_string[1:3]
+    else:
+        code_string = code_string[0:2]
+
+    situation = ""
+    if is_home:
+        situation = f"{code_string[1]}v{code_string[0]}"
+    else:
+        situation = f"{code_string[0]}v{code_string[1]}"
+    return situation
+
+
 def load_and_prepare_data():
     """Load the NHL goals dataset and prepare features for clustering"""
     print("Loading NHL goals dataset...")
-    df = pd.read_csv('data/nhl_goals_with_names.csv', low_memory=False)
+    df = pd.read_csv('data/nhl_goals_with_full_data.csv', low_memory=False)
     df['game_date'] = pd.to_datetime(df['game_date'])
     df = df[df['game_date'] >= '2023-10-09'].copy()
     # filters out penalty shots
@@ -75,6 +93,38 @@ def load_and_prepare_data():
     df['score_diff'] = df['team_score'] - df['opponent_score']
     
     # Select the specified features
+    print(f"situation code pre conversion value counts: {df['situation_code'].value_counts()}")
+
+    # flatten situation code
+    situation_code_map = {
+        1551: 1551,
+        1451: 1451,
+        1541: 1541,
+        1441: 1441,
+        431: 1431,
+        651: 1651,
+        1560: 1561,
+        1331: 1331,
+        1351: 1351,
+        1531: 1531,
+        1431: 1431,
+        1341: 1341,
+        641: 1641,
+        1460: 1461,
+        1010: 1011,
+
+        101: 1011,
+        431: 1431,
+        541: 1541,
+        1550: 1551,
+        1340: 1341,
+        1350: 1351
+    }
+    df['situation_code'] = df['situation_code'].apply(lambda x: situation_code_map[x])
+    df['situation'] = df.apply(lambda row: determine_situation_code(row['situation_code'], row['team_id'], row['home_team']), axis=1)
+    print(f"situation code post conversion value counts: {df['situation_code'].value_counts()}")
+    print(f"siutation value counts: {df['situation'].value_counts()}")
+    print(f"top 20 situations: {df[["situation", "situation_code"]].head(20)}")
     feature_columns = ['x', 'y', 'period', 'period_time', 'shot_zone', 'shot_type', 'game_time',
                       'score_diff', 'situation_code', 'team_id']
     
