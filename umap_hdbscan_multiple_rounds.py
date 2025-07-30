@@ -77,6 +77,24 @@ def load_and_prepare_data():
 
     df['month'] = df['game_date'].dt.month
     df['day'] = df['game_date'].dt.day
+    
+    # Calculate season day (days since October 1st start of season)
+    def calculate_season_day(game_date):
+        """Calculate days into the NHL season from October 1st start date"""
+        if pd.isna(game_date):
+            return None
+            
+        # Determine which season this game belongs to
+        if game_date.month >= 10:  # October or later = current season year
+            season_start = pd.Timestamp(year=game_date.year, month=10, day=1)
+        else:  # Before October = previous season year
+            season_start = pd.Timestamp(year=game_date.year - 1, month=10, day=1)
+        
+        # Calculate days into season
+        days_into_season = (game_date - season_start).days + 1  # +1 to make it 1-based
+        return max(1, days_into_season)  # Ensure minimum of 1
+    
+    df['season_day'] = df['game_date'].apply(calculate_season_day)
 
     print(f"Goals from 2023 onwards: {len(df):,}")
 
@@ -135,8 +153,8 @@ def load_and_prepare_data():
     df['situation'] = df.apply(lambda row: determine_situation_code(row['situation_code'], row['team_id'], row['home_team']), axis=1)
     
     # Select the specified features (excluding player_id and goalie integer IDs)
-    feature_columns = ['shot_zone', 'shot_type', 'game_time', 
-                      'team_score', 'opponent_score', 'situation', 'month', 'day']
+    feature_columns = ['shot_zone', 'shot_type', 'game_time', 'team_score', 'opponent_score',
+                      'score_diff', 'situation', 'month', 'day', 'season_day']
     
     # Create subset with only complete data for key features
     df_subset = df[feature_columns].copy()
@@ -238,7 +256,7 @@ def encode_categorical_features(df, feature_subset):
             label_encoders[col] = le
     
     # Fill missing numerical values for columns in this subset
-    numerical_columns = ['game_time', 'team_score', 'opponent_score', 'month', 'day']
+    numerical_columns = ['game_time', 'score_diff', 'month', 'day', 'season_day']
     for col in numerical_columns:
         if col in df_encoded.columns and col in feature_subset:
             df_encoded[col] = df_encoded[col].fillna(df_encoded[col].median())
@@ -313,7 +331,7 @@ def perform_cluster_clustering(df_subset, galaxy_labels):
     print("Step 2: Creating clusters using period, period_time, score_diff, and situation...")
     
     # Use temporal/game state features for clusters
-    cluster_features = ['game_time', 'team_score', 'opponent_score', 'month', 'day']
+    cluster_features = ['game_time', 'team_score', 'opponent_score']
     
     cluster_labels = np.full(len(df_subset), -1, dtype=int)
     cluster_id = 0
@@ -585,7 +603,7 @@ def create_goal_hierarchy_mapping_FIXED(galaxy_labels, cluster_labels, solar_sys
         'team_id', 'player_id', 'period', 'time', 'situation', 'situation_code', 'x', 'y', 'url',
         'shot_type', 'goalie', 'home_team_defending_side', 'score_diff', 'shot_zone', 'team_score', 'opponent_score',
         'game_date', 'team_name', 'player_name', 'goalie_name', 'time_minutes', 'time_seconds',
-        'period_time', 'month', 'day', 'home_team'
+        'period_time', 'month', 'day', 'season_day', 'home_team'
     ]
     
     hierarchy_columns = [

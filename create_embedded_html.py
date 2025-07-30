@@ -574,7 +574,6 @@ def create_embedded_constellation_html():
         <p>🔍 <strong>Zoom:</strong> Mouse wheel or +/- controls</p>
         <p>🖱️ <strong>Pan:</strong> Click and drag to explore</p>
         <p>⭐ <strong>Goals:</strong> Click stars for detailed info</p>
-        <p>📹 <strong>Videos:</strong> Watch NHL highlights directly</p>
     </div>
     
     <div class="ui-panel legend-panel">
@@ -631,8 +630,8 @@ def create_embedded_constellation_html():
         const map = L.map('map', {{
             crs: customCRS,
             center: [0, 0],
-            zoom: 0.5,
-            minZoom: 0,
+            zoom: 0,
+            minZoom: -1,
             maxZoom: 6,
             zoomControl: true,
             attributionControl: false,
@@ -1118,12 +1117,11 @@ def create_embedded_constellation_html():
                 avgPeriod: 0,
                 avgPeriodTime: 0,
                 avgScoreDiff: 0,
-                avgMonth: 0,
-                avgDay: 0,
+                avgSeasonDay: 0,
                 validCoords: 0,
                 validPeriodData: 0,
                 validScoreData: 0,
-                validDateData: 0
+                validSeasonData: 0
             }};
             
             if (level === 'galaxy') {{
@@ -1253,13 +1251,9 @@ def create_embedded_constellation_html():
                             stats.validScoreData++;
                         }}
                         
-                        if (star.properties.month && !isNaN(star.properties.month)) {{
-                            stats.avgMonth += parseFloat(star.properties.month);
-                            stats.validDateData++;
-                        }}
-                        
-                        if (star.properties.day && !isNaN(star.properties.day)) {{
-                            stats.avgDay += parseFloat(star.properties.day);
+                        if (star.properties.season_day && !isNaN(star.properties.season_day)) {{
+                            stats.avgSeasonDay += parseFloat(star.properties.season_day);
+                            stats.validSeasonData++;
                         }}
                     }}
                 }});
@@ -1322,9 +1316,8 @@ def create_embedded_constellation_html():
                 stats.avgScoreDiff = stats.avgScoreDiff / stats.validScoreData;
             }}
             
-            if (stats.validDateData > 0) {{
-                stats.avgMonth = stats.avgMonth / stats.validDateData;
-                stats.avgDay = stats.avgDay / stats.validDateData;
+            if (stats.validSeasonData > 0) {{
+                stats.avgSeasonDay = stats.avgSeasonDay / stats.validSeasonData;
             }}
             
             return stats;
@@ -1333,9 +1326,9 @@ def create_embedded_constellation_html():
         // Function to create hierarchical popup content
         function createHierarchicalPopup(stats, coordinate) {{
             const shareButtonId = `share-btn-${{stats.name.replace(/[^a-zA-Z0-9]/g, '-')}}`;
-            const targetZoom = stats.level === 'galaxy' ? 1 : 
-                              stats.level === 'cluster' ? 2.5 : 
-                              stats.level === 'solar system' ? 3.5 : 2;
+            const targetZoom = stats.level === 'galaxy' ? 0.5 : 
+                              stats.level === 'cluster' ? 2 : 
+                              stats.level === 'solar system' ? 3 : 1.5;
             
             let content = `<div style="max-width: 300px;">
                 <h3 style="margin: 0 0 10px 0; color: #ffd700; text-align: center;">
@@ -1422,11 +1415,19 @@ def create_embedded_constellation_html():
                     content += `</div>`;
                 }}
                 
-                if (stats.validDateData > 0) {{
+                if (stats.validSeasonData > 0) {{
+                    const avgSeasonDay = Math.round(stats.avgSeasonDay);
+                    // Convert season day back to a readable format
+                    const seasonStartDate = new Date(2023, 9, 1); // October 1, 2023 (month is 0-indexed)
+                    const avgDate = new Date(seasonStartDate);
+                    avgDate.setDate(avgDate.getDate() + avgSeasonDay - 1);
+                    
+                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    const formattedDate = `${{monthNames[avgDate.getMonth()]}} ${{avgDate.getDate()}}`;
+                    
                     content += `<div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
                         <strong>📅 Season Timing:</strong><br>`;
-                    content += `Average Month: ${{Math.round(stats.avgMonth)}}<br>`;
-                    content += `Average Day: ${{Math.round(stats.avgDay)}}<br>`;
+                    content += `Average Date: ${{formattedDate}} (Day ${{avgSeasonDay}})<br>`;
                     content += `</div>`;
                 }}
                 
@@ -1698,7 +1699,7 @@ def create_embedded_constellation_html():
         let starMarkers = new Map();
         
         function renderStarsInViewport() {{
-            if (map.getZoom() < 4) return; // Only render at high zoom
+            if (map.getZoom() < 3.5) return; // Only render at high zoom
             
             const bounds = map.getBounds();
             const bufferFactor = 0.5; // Render 50% beyond viewport for smooth panning
@@ -1707,7 +1708,7 @@ def create_embedded_constellation_html():
             // At high zoom levels (5+), also filter by which solar systems are in the viewport
             // This prevents showing stars from distant solar systems
             const relevantSolarSystems = new Set();
-            if (map.getZoom() >= 5) {{
+            if (map.getZoom() >= 4.5) {{
                 solarSystems.forEach(system => {{
                     const solarCoord = [system.geometry.coordinates[1], system.geometry.coordinates[0]];
                     if (expandedBounds.contains(solarCoord)) {{
@@ -1731,7 +1732,7 @@ def create_embedded_constellation_html():
                 
                 // Additional filtering at high zoom: only show stars from relevant solar systems
                 let shouldShow = isInView;
-                if (map.getZoom() >= 5 && relevantSolarSystems.size > 0) {{
+                if (map.getZoom() >= 4.5 && relevantSolarSystems.size > 0) {{
                     const starSolarSystem = star.properties.solar_system;
                     shouldShow = isInView && relevantSolarSystems.has(starSolarSystem);
                 }}
@@ -1804,7 +1805,7 @@ def create_embedded_constellation_html():
                                     <strong>Shot Type:</strong> <span>${{props.shot_type || 'Unknown'}}</span>
                                 </div>
                                 <div class="goal-detail">
-                                    <strong>Situation:</strong> <span>${{props.situation_code || 'Unknown'}}</span>
+                                    <strong>Situation:</strong> <span>${{props.situation || 'Unknown'}}</span>
                                 </div>
                                 <div class="goal-detail">
                                     <strong>Period:</strong> <span>${{props.period || 'Unknown'}}</span>
@@ -1822,13 +1823,10 @@ def create_embedded_constellation_html():
                                     <strong>Goalie:</strong> <span>${{props.goalie_name || 'Empty Net'}}</span>
                                 </div>
                                 <div class="goal-detail">
-                                    <strong>Goal Location:</strong> <span>${{props.goal_x !== null && props.goal_y !== null ? `(x: ${{props.goal_x}}, y: ${{props.goal_y}})` : 'Not recorded'}}</span>
+                                    <strong>Goal Location:</strong> <span>${{props.shot_zone && props.shot_zone.trim() !== '' ? (props.goal_x !== null && props.goal_y !== null ? `${{props.shot_zone}}(x: ${{props.goal_x}}, y: ${{props.goal_y}})` : props.shot_zone) : (props.goal_x !== null && props.goal_y !== null ? `(x: ${{props.goal_x}}, y: ${{props.goal_y}})` : 'Not recorded')}}</span>
                                 </div>
                                 <div class="goal-detail">
                                     <strong>Solar System:</strong> <span>${{props.solar_system ? props.solar_system.split('.')[2] || props.solar_system : 'Unknown'}}</span>
-                                </div>
-                                <div class="goal-detail">
-                                    <strong>Cluster:</strong> <span style="color: ${{clusterColor}}; font-weight: bold;">●</span> ${{props.goal_count || 1}} goals
                                 </div>
                         `;
                         
@@ -1884,7 +1882,7 @@ def create_embedded_constellation_html():
         
         // Set initial view to show all galaxies
         const bounds = L.latLngBounds(galaxies.map(g => [g.geometry.coordinates[1], g.geometry.coordinates[0]]));
-        map.fitBounds(bounds.pad(0.3));
+        map.fitBounds(bounds.pad(0.4));  // Increased padding for wider initial view
         
         // Track the last stable context to avoid constant changes
         let stableContext = {{ galaxy: null, cluster: null }};
@@ -1910,7 +1908,7 @@ def create_embedded_constellation_html():
             }});
             
             // Find closest cluster if zoomed in enough
-            if (zoom >= 1) {{
+            if (zoom >= 0.5) {{
                 clusters.forEach(cluster => {{
                     const clusterLatLng = L.latLng(cluster.geometry.coordinates[1], cluster.geometry.coordinates[0]);
                     const distance = center.distanceTo(clusterLatLng);
@@ -1922,7 +1920,7 @@ def create_embedded_constellation_html():
             }}
             
             // Use stable context logic only at very high zoom
-            if (zoom >= 4) {{
+            if (zoom >= 3.5) {{
                 // At high zoom, prefer stable context if we have it and it's reasonably close
                 if (stableContext.galaxy && minGalaxyDistance < 100000) {{ // 100km
                     currentGalaxy = stableContext.galaxy;
@@ -1947,7 +1945,7 @@ def create_embedded_constellation_html():
             const clusterContext = document.getElementById('cluster-context');
             
             // Galaxy label fading and context
-            if (zoom >= 2.5) {{
+            if (zoom >= 2) {{
                 // Completely fade out galaxy labels and show in context bar
                 galaxyLabelLayer.eachLayer(layer => {{
                     if (layer.getElement()) {{
@@ -1963,7 +1961,7 @@ def create_embedded_constellation_html():
                 }}
             }} else {{
                 // Show galaxy labels normally
-                const galaxyOpacity = Math.max(0.3, Math.min(1, (3 - zoom) / 2));
+                const galaxyOpacity = Math.max(0.3, Math.min(1, (2.5 - zoom) / 2));
                 galaxyLabelLayer.eachLayer(layer => {{
                     if (layer.getElement()) {{
                         layer.getElement().style.opacity = galaxyOpacity;
@@ -1973,7 +1971,7 @@ def create_embedded_constellation_html():
             }}
             
             // Cluster label fading and context
-            if (zoom >= 3.5) {{
+            if (zoom >= 3) {{
                 // Completely fade out cluster labels and show in context bar
                 clusterLabelLayer.eachLayer(layer => {{
                     if (layer.getElement()) {{
@@ -1987,9 +1985,9 @@ def create_embedded_constellation_html():
                 }} else {{
                     clusterContext.textContent = '';
                 }}
-            }} else if (zoom >= 1) {{
+            }} else if (zoom >= 0.5) {{
                 // Show cluster labels with fading
-                const clusterOpacity = Math.max(0.3, Math.min(1, (4 - zoom) / 2));
+                const clusterOpacity = Math.max(0.3, Math.min(1, (3.5 - zoom) / 2));
                 clusterLabelLayer.eachLayer(layer => {{
                     if (layer.getElement()) {{
                         layer.getElement().style.opacity = clusterOpacity;
@@ -2000,8 +1998,8 @@ def create_embedded_constellation_html():
                 clusterContext.textContent = '';
             }}
             
-            // Solar system label fading - don't fade at zoom 4+ when viewing individual stars
-            const solarSystemOpacity = zoom >= 5 ? 0 : 1;
+            // Solar system label fading - don't fade at zoom 4.5+ when viewing individual stars
+            const solarSystemOpacity = zoom >= 4.5 ? 0 : 1;
             solarSystemLabelLayer.eachLayer(layer => {{
                 if (layer.getElement()) {{
                     layer.getElement().style.opacity = solarSystemOpacity;
@@ -2023,7 +2021,7 @@ def create_embedded_constellation_html():
             let objectCount = galaxies.length;
             
             // Show/hide clusters based on zoom level (but not at highest zoom)
-            if (zoom >= 1 && zoom < 4) {{
+            if (zoom >= 0.5 && zoom < 3.5) {{
                 if (!map.hasLayer(clusterLayer)) {{
                     map.addLayer(clusterLayer);
                     map.addLayer(clusterLabelLayer);
@@ -2038,7 +2036,7 @@ def create_embedded_constellation_html():
             }}
             
             // Show/hide solar systems vs stars based on zoom level
-            if (zoom >= 3 && zoom < 5) {{
+            if (zoom >= 2.5 && zoom < 4.5) {{
                 // Show solar systems, hide individual stars
                 if (!map.hasLayer(solarSystemLayer)) {{
                     map.addLayer(solarSystemLayer);
@@ -2049,7 +2047,7 @@ def create_embedded_constellation_html():
                 }}
                 visibleLayers.push('Solar Systems');
                 objectCount += solarSystems.length;
-            }} else if (zoom >= 5) {{
+            }} else if (zoom >= 4.5) {{
                 // Show individual stars, hide solar systems
                 if (!map.hasLayer(starLayer)) {{
                     map.addLayer(starLayer);
@@ -2078,7 +2076,7 @@ def create_embedded_constellation_html():
             }}
             
             // Hide galaxy markers at high zoom levels to reduce clutter
-            if (zoom >= 4) {{
+            if (zoom >= 3.5) {{
                 // Hide galaxy markers when viewing individual stars
                 if (map.hasLayer(galaxyLayer)) {{
                     console.log('Hiding galaxy markers at zoom', zoom);
@@ -2184,9 +2182,9 @@ def create_embedded_constellation_html():
             
             // If it's a navigable celestial object, navigate to it
             if (playerInfo.navigable) {{
-                const targetZoom = playerInfo.type === 'Galaxy' ? 1 : 
-                                   playerInfo.type === 'Cluster' ? 2.5 : 
-                                   playerInfo.type === 'Solar System' ? 3.5 : 2;
+                const targetZoom = playerInfo.type === 'Galaxy' ? 0.5 : 
+                                   playerInfo.type === 'Cluster' ? 2 : 
+                                   playerInfo.type === 'Solar System' ? 3 : 1.5;
                 navigateToLocation(playerInfo.name, playerInfo.type, playerInfo.data.coordinate, targetZoom);
             }} else {{
                 drawConnectionLines();
@@ -2215,7 +2213,7 @@ def create_embedded_constellation_html():
             // Find visible components containing this player/goalie (viewport-only)
             const visibleComponents = [];
             
-            if (zoom >= 5) {{
+            if (zoom >= 4.5) {{
                 // Individual goals level - connect rendered stars in viewport
                 relevantGoals.forEach((goal, index) => {{
                     if (renderedStars.has(stars.indexOf(goal))) {{
@@ -2225,7 +2223,7 @@ def create_embedded_constellation_html():
                         }}
                     }}
                 }});
-            }} else if (zoom >= 3) {{
+            }} else if (zoom >= 2.5) {{
                 // Solar system level - connect solar systems containing this player in viewport
                 const solarSystemsWithPlayer = new Set();
                 relevantGoals.forEach(goal => {{
@@ -2243,7 +2241,7 @@ def create_embedded_constellation_html():
                         }}
                     }}
                 }});
-            }} else if (zoom >= 1) {{
+            }} else if (zoom >= 0.5) {{
                 // Cluster level - connect clusters containing this player in viewport
                 const clustersWithPlayer = new Set();
                 relevantGoals.forEach(goal => {{
@@ -2367,7 +2365,7 @@ def create_embedded_constellation_html():
         }}
         
         console.log('NHL Constellation Map initialized successfully!');
-        console.log('Zoom levels: 0 (Galaxies), 1+ (+ Clusters), 2-3 (+ Solar Systems), 4+ (+ Individual Goals)');
+        console.log('Zoom levels: -1 to 0 (Galaxies), 0.5+ (+ Clusters), 2.5-4.5 (+ Solar Systems), 4.5+ (+ Individual Goals)');
         console.log('🔗 Share locations by using the "Copy Share Link" button in any celestial object popup');
         console.log('🔍 Search now supports players, goalies, galaxies, clusters, and solar systems');
     </script>

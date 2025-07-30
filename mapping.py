@@ -6,10 +6,34 @@ import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
 import logging
+from datetime import datetime, date
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+def calculate_season_day(game_date_str):
+    """Calculate days into the NHL season from October 1st start date"""
+    try:
+        if pd.isna(game_date_str) or game_date_str == 'Unknown':
+            return None
+            
+        # Parse the game date
+        game_date = pd.to_datetime(game_date_str).date()
+        
+        # Determine which season this game belongs to
+        if game_date.month >= 10:  # October or later = current season year
+            season_start = date(game_date.year, 10, 1)
+        else:  # Before October = previous season year
+            season_start = date(game_date.year - 1, 10, 1)
+        
+        # Calculate days into season
+        days_into_season = (game_date - season_start).days + 1  # +1 to make it 1-based
+        return max(1, days_into_season)  # Ensure minimum of 1
+        
+    except Exception as e:
+        logger.warning(f"Could not calculate season day for {game_date_str}: {e}")
+        return None
 
 class ConstellationMapper:
     """Creates constellation map layouts from clustering results"""
@@ -19,8 +43,8 @@ class ConstellationMapper:
         os.makedirs(output_dir, exist_ok=True)
         
         # Coordinate system parameters
-        self.galaxy_radius = 1000  # Max radius for galaxy distribution
-        self.constellation_radius = 75  # Max radius for constellations within galaxy (reduced from 120)
+        self.galaxy_radius = 700  # Max radius for galaxy distribution (reduced from 1000 for closer galaxies)
+        self.constellation_radius = 50  # Max radius for constellations within galaxy (reduced from 120)
         self.star_radius = 45  # Max radius for stars within constellation (reduced from 80)
         
     def load_clustering_results(self, specific_file=None):
@@ -282,12 +306,13 @@ class ConstellationMapper:
         star_positions = {}
         goal_positions = {}
         
-        # Generate color palette for clusters
+        # Generate color palette for clusters with better uniqueness
         import colorsys
         def generate_cluster_color(cluster_index, total_clusters):
-            hue = (cluster_index * 137.508) % 360  # Golden angle for good distribution
-            saturation = 0.7 + 0.3 * (cluster_index % 3) / 3  # Vary saturation
-            lightness = 0.5 + 0.3 * ((cluster_index * 7) % 4) / 4  # Vary lightness
+            # Use prime number spacing and multiple variables for better distribution
+            hue = (cluster_index * 47.123 + cluster_index**2 * 13.456) % 360  # More complex hue distribution
+            saturation = 0.65 + 0.35 * ((cluster_index * 23) % 7) / 7  # More saturation variation
+            lightness = 0.45 + 0.4 * ((cluster_index * 17 + cluster_index**2 * 3) % 9) / 9  # More lightness variation
             rgb = colorsys.hls_to_rgb(hue/360, lightness, saturation)
             return f"#{int(rgb[0]*255):02x}{int(rgb[1]*255):02x}{int(rgb[2]*255):02x}"
         
@@ -478,7 +503,8 @@ class ConstellationMapper:
                     "month": goal_data.get('month', None),
                     "day": goal_data.get('day', None),
                     "shot_zone": goal_data.get('shot_zone', None),
-                    "situation": goal_data.get('situation', None)
+                    "situation": goal_data.get('situation', None),
+                    "season_day": calculate_season_day(goal_data.get('game_date', None))
                 }
             }
             features.append(feature)
