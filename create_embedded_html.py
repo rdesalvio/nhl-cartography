@@ -1110,7 +1110,20 @@ def create_embedded_constellation_html():
                 teams: new Set(),
                 shotTypes: new Map(),
                 periods: new Map(),
-                situationCodes: new Map()
+                shotZones: new Map(),
+                situations: new Map(),
+                // New stats for different hierarchy levels
+                avgX: 0,
+                avgY: 0,
+                avgPeriod: 0,
+                avgPeriodTime: 0,
+                avgScoreDiff: 0,
+                avgMonth: 0,
+                avgDay: 0,
+                validCoords: 0,
+                validPeriodData: 0,
+                validScoreData: 0,
+                validDateData: 0
             }};
             
             if (level === 'galaxy') {{
@@ -1159,9 +1172,22 @@ def create_embedded_constellation_html():
                             stats.periods.set(star.properties.period, (stats.periods.get(star.properties.period) || 0) + 1);
                         }}
                         
-                        // Collect situation code stats
-                        if (star.properties.situation_code) {{
-                            stats.situationCodes.set(star.properties.situation_code, (stats.situationCodes.get(star.properties.situation_code) || 0) + 1);
+                        
+                        // Collect shot zone stats
+                        if (star.properties.shot_zone && star.properties.shot_zone.trim() !== '') {{
+                            stats.shotZones.set(star.properties.shot_zone, (stats.shotZones.get(star.properties.shot_zone) || 0) + 1);
+                        }}
+                        
+                        // Collect situation stats
+                        if (star.properties.situation && star.properties.situation.trim() !== '') {{
+                            stats.situations.set(star.properties.situation, (stats.situations.get(star.properties.situation) || 0) + 1);
+                        }}
+                        
+                        // Galaxy-specific stats: average coordinates for zone information
+                        if (star.properties.x && star.properties.y && !isNaN(star.properties.x) && !isNaN(star.properties.y)) {{
+                            stats.avgX += parseFloat(star.properties.x);
+                            stats.avgY += parseFloat(star.properties.y);
+                            stats.validCoords++;
                         }}
                     }}
                 }});
@@ -1201,8 +1227,39 @@ def create_embedded_constellation_html():
                             stats.periods.set(star.properties.period, (stats.periods.get(star.properties.period) || 0) + 1);
                         }}
                         
-                        if (star.properties.situation_code) {{
-                            stats.situationCodes.set(star.properties.situation_code, (stats.situationCodes.get(star.properties.situation_code) || 0) + 1);
+                        
+                        // Collect shot zone stats
+                        if (star.properties.shot_zone && star.properties.shot_zone.trim() !== '') {{
+                            stats.shotZones.set(star.properties.shot_zone, (stats.shotZones.get(star.properties.shot_zone) || 0) + 1);
+                        }}
+                        
+                        // Collect situation stats
+                        if (star.properties.situation && star.properties.situation.trim() !== '') {{
+                            stats.situations.set(star.properties.situation, (stats.situations.get(star.properties.situation) || 0) + 1);
+                        }}
+                        
+                        // Cluster-specific stats: period, time, score, and date averages
+                        if (star.properties.period && !isNaN(star.properties.period)) {{
+                            stats.avgPeriod += parseFloat(star.properties.period);
+                            stats.validPeriodData++;
+                        }}
+                        
+                        if (star.properties.period_time && !isNaN(star.properties.period_time)) {{
+                            stats.avgPeriodTime += parseFloat(star.properties.period_time);
+                        }}
+                        
+                        if (star.properties.score_diff !== undefined && !isNaN(star.properties.score_diff)) {{
+                            stats.avgScoreDiff += parseFloat(star.properties.score_diff);
+                            stats.validScoreData++;
+                        }}
+                        
+                        if (star.properties.month && !isNaN(star.properties.month)) {{
+                            stats.avgMonth += parseFloat(star.properties.month);
+                            stats.validDateData++;
+                        }}
+                        
+                        if (star.properties.day && !isNaN(star.properties.day)) {{
+                            stats.avgDay += parseFloat(star.properties.day);
                         }}
                     }}
                 }});
@@ -1236,11 +1293,38 @@ def create_embedded_constellation_html():
                             stats.periods.set(star.properties.period, (stats.periods.get(star.properties.period) || 0) + 1);
                         }}
                         
-                        if (star.properties.situation_code) {{
-                            stats.situationCodes.set(star.properties.situation_code, (stats.situationCodes.get(star.properties.situation_code) || 0) + 1);
+                        
+                        // Collect shot zone stats
+                        if (star.properties.shot_zone && star.properties.shot_zone.trim() !== '') {{
+                            stats.shotZones.set(star.properties.shot_zone, (stats.shotZones.get(star.properties.shot_zone) || 0) + 1);
+                        }}
+                        
+                        // Collect situation stats
+                        if (star.properties.situation && star.properties.situation.trim() !== '') {{
+                            stats.situations.set(star.properties.situation, (stats.situations.get(star.properties.situation) || 0) + 1);
                         }}
                     }}
                 }});
+            }}
+            
+            // Calculate averages
+            if (stats.validCoords > 0) {{
+                stats.avgX = stats.avgX / stats.validCoords;
+                stats.avgY = stats.avgY / stats.validCoords;
+            }}
+            
+            if (stats.validPeriodData > 0) {{
+                stats.avgPeriod = stats.avgPeriod / stats.validPeriodData;
+                stats.avgPeriodTime = stats.avgPeriodTime / stats.validPeriodData;
+            }}
+            
+            if (stats.validScoreData > 0) {{
+                stats.avgScoreDiff = stats.avgScoreDiff / stats.validScoreData;
+            }}
+            
+            if (stats.validDateData > 0) {{
+                stats.avgMonth = stats.avgMonth / stats.validDateData;
+                stats.avgDay = stats.avgDay / stats.validDateData;
             }}
             
             return stats;
@@ -1289,30 +1373,113 @@ def create_embedded_constellation_html():
             content += `⭐ Stars (Goals): ${{stats.stars}}<br>`;
             content += `</div>`;
             
-            // Top players
-            if (stats.topPlayers.size > 0) {{
-                const topPlayers = Array.from(stats.topPlayers.entries())
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 3);
+            // Level-specific sections
+            if (stats.level === 'galaxy') {{
+                // Zone section for galaxies (most common shot zone)
                 content += `<div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                    <strong>🏒 Top Scorers:</strong><br>`;
-                topPlayers.forEach(([player, count]) => {{
-                    content += `• ${{player}}: ${{count}} goals<br>`;
-                }});
+                    <strong>📍 Zone:</strong><br>`;
+                
+                if (stats.shotZones.size > 0) {{
+                    const topZone = Array.from(stats.shotZones.entries())
+                        .sort((a, b) => b[1] - a[1])[0];
+                    content += `• ${{topZone[0]}} (${{topZone[1]}} goals)<br>`;
+                    if (stats.shotZones.size > 1) {{
+                        const secondZone = Array.from(stats.shotZones.entries())
+                            .sort((a, b) => b[1] - a[1])[1];
+                        content += `• ${{secondZone[0]}} (${{secondZone[1]}} goals)<br>`;
+                    }}
+                }} else {{
+                    content += `No zone data available<br>`;
+                }}
                 content += `</div>`;
-            }}
-            
-            // Top goalies
-            if (stats.topGoalies.size > 0) {{
-                const topGoalies = Array.from(stats.topGoalies.entries())
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 3);
-                content += `<div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                    <strong>🥅 Most Scored On:</strong><br>`;
-                topGoalies.forEach(([goalie, count]) => {{
-                    content += `• ${{goalie}}: ${{count}} goals<br>`;
-                }});
-                content += `</div>`;
+                
+                // Situations for galaxies
+                if (stats.situations.size > 0) {{
+                    const topSituations = Array.from(stats.situations.entries())
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 3);
+                    content += `<div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                        <strong>⚡ Situations:</strong><br>`;
+                    topSituations.forEach(([situation, count]) => {{
+                        content += `• ${{situation}}: ${{count}}<br>`;
+                    }});
+                    content += `</div>`;
+                }}
+            }} else if (stats.level === 'cluster') {{
+                // Temporal/game state sections for clusters
+                if (stats.validPeriodData > 0) {{
+                    content += `<div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                        <strong>⏰ Timing:</strong><br>`;
+                    content += `Average Period: ${{stats.avgPeriod.toFixed(1)}}<br>`;
+                    content += `Average Period Time: ${{stats.avgPeriodTime.toFixed(1)}} min<br>`;
+                    content += `</div>`;
+                }}
+                
+                if (stats.validScoreData > 0) {{
+                    content += `<div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                        <strong>📊 Score Context:</strong><br>`;
+                    content += `Average Score Diff: ${{stats.avgScoreDiff.toFixed(1)}}<br>`;
+                    content += `</div>`;
+                }}
+                
+                if (stats.validDateData > 0) {{
+                    content += `<div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                        <strong>📅 Season Timing:</strong><br>`;
+                    content += `Average Month: ${{Math.round(stats.avgMonth)}}<br>`;
+                    content += `Average Day: ${{Math.round(stats.avgDay)}}<br>`;
+                    content += `</div>`;
+                }}
+                
+                // Situations for clusters
+                if (stats.situations.size > 0) {{
+                    const topSituations = Array.from(stats.situations.entries())
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 3);
+                    content += `<div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                        <strong>⚡ Situations:</strong><br>`;
+                    topSituations.forEach(([situation, count]) => {{
+                        content += `• ${{situation}}: ${{count}}<br>`;
+                    }});
+                    content += `</div>`;
+                }}
+            }} else if (stats.level === 'solar system') {{
+                // Top players and goalies for solar systems
+                if (stats.topPlayers.size > 0) {{
+                    const topPlayers = Array.from(stats.topPlayers.entries())
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 3);
+                    content += `<div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                        <strong>🏒 Top Scorers:</strong><br>`;
+                    topPlayers.forEach(([player, count]) => {{
+                        content += `• ${{player}}: ${{count}} goals<br>`;
+                    }});
+                    content += `</div>`;
+                }}
+                
+                if (stats.topGoalies.size > 0) {{
+                    const topGoalies = Array.from(stats.topGoalies.entries())
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 3);
+                    content += `<div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                        <strong>🥅 Most Scored On:</strong><br>`;
+                    topGoalies.forEach(([goalie, count]) => {{
+                        content += `• ${{goalie}}: ${{count}} goals<br>`;
+                    }});
+                    content += `</div>`;
+                }}
+                
+                // Situations for solar systems
+                if (stats.situations.size > 0) {{
+                    const topSituations = Array.from(stats.situations.entries())
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 3);
+                    content += `<div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                        <strong>⚡ Situations:</strong><br>`;
+                    topSituations.forEach(([situation, count]) => {{
+                        content += `• ${{situation}}: ${{count}}<br>`;
+                    }});
+                    content += `</div>`;
+                }}
             }}
             
             
@@ -1329,18 +1496,6 @@ def create_embedded_constellation_html():
                 content += `</div>`;
             }}
             
-            // Situation codes
-            if (stats.situationCodes.size > 0) {{
-                const topSituationCodes = Array.from(stats.situationCodes.entries())
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 3);
-                content += `<div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                    <strong>⚡ Situations:</strong><br>`;
-                topSituationCodes.forEach(([situationCode, count]) => {{
-                    content += `• ${{situationCode}}: ${{count}}<br>`;
-                }});
-                content += `</div>`;
-            }}
             
             content += `</div>`;
             

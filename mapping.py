@@ -469,7 +469,16 @@ class ConstellationMapper:
                     "opponent_score": int(goal_data.get('opponent_score', 0)) if goal_data.get('opponent_score') is not None else 0,
                     "goalie_name": str(goal_data.get('goalie_name', 'Empty Net')),
                     "goal_x": goal_data.get('x', None),
-                    "goal_y": goal_data.get('y', None)
+                    "goal_y": goal_data.get('y', None),
+                    # Add missing fields for UI statistics
+                    "x": goal_data.get('x', None),
+                    "y": goal_data.get('y', None),
+                    "score_diff": goal_data.get('score_diff', None),
+                    "period_time": goal_data.get('period_time', None),
+                    "month": goal_data.get('month', None),
+                    "day": goal_data.get('day', None),
+                    "shot_zone": goal_data.get('shot_zone', None),
+                    "situation": goal_data.get('situation', None)
                 }
             }
             features.append(feature)
