@@ -20,7 +20,7 @@ try:
     import anthropic
     # API key will be read from environment variable ANTHROPIC_API_KEY
     anthropic_client = anthropic.Anthropic()
-    AI_AVAILABLE = True
+    AI_AVAILABLE = False
     logger.info("Anthropic Claude API configured successfully")
 except ImportError:
     AI_AVAILABLE = False
@@ -402,7 +402,7 @@ def encode_categorical_features(df, feature_subset):
     # Return only the columns we're using for this clustering step
     return df_encoded[feature_subset], label_encoders
 
-def perform_umap_hdbscan_clustering(df_encoded, step_name, min_cluster_size=100):
+def perform_umap_hdbscan_clustering(df_encoded, step_name, min_cluster_size=50):
     """Perform UMAP + HDBSCAN clustering on the given features"""
     print(f"{step_name}: Performing UMAP + HDBSCAN clustering...")
     
@@ -415,9 +415,12 @@ def perform_umap_hdbscan_clustering(df_encoded, step_name, min_cluster_size=100)
     # Apply UMAP for dimensionality reduction
     print("Applying UMAP dimensionality reduction...")
     umap_reducer = umap.UMAP(
-        n_components=15,
-        n_neighbors=15,
-        min_dist=0.1,
+        #n_components=15,
+        #n_neighbors=15,
+        #min_dist=0.1,
+        n_components=10,
+        n_neighbors=20,
+        min_dist=0.15,
         random_state=42
     )
     umap_features = umap_reducer.fit_transform(features_scaled)
@@ -459,7 +462,7 @@ def perform_galaxy_clustering(df_subset):
     galaxy_labels = perform_umap_hdbscan_clustering(
         df_encoded, 
         "Galaxy clustering",
-        min_cluster_size=100
+        min_cluster_size=50
     )
     
     return galaxy_labels
@@ -496,7 +499,7 @@ def perform_cluster_clustering(df_subset, galaxy_labels):
         galaxy_cluster_labels = perform_umap_hdbscan_clustering(
             df_encoded,
             f"Galaxy {galaxy_id} cluster clustering",
-            min_cluster_size=30  # Smaller min size since we're working within galaxies
+            min_cluster_size=50  # Smaller min size since we're working within galaxies
         )
         
         # Map local cluster labels to global cluster labels

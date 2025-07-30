@@ -28,21 +28,21 @@ def create_embedded_constellation_html():
         body {{
             margin: 0;
             padding: 0;
-            font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
-            background: #0a0a0a;
-            color: #00ff41;
+            font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0a0a23 0%, #1a1a3a 50%, #0f0f2f 100%);
+            color: #ffffff;
             overflow: hidden;
-            image-rendering: pixelated;
+            font-weight: 400;
         }}
         
         #map {{
             height: 100vh;
             width: 100vw;
-            background: linear-gradient(180deg, #001100 0%, #000800 50%, #000000 100%);
+            background: radial-gradient(ellipse at center, #1a1a4a 0%, #0a0a2a 70%, #000015 100%);
             position: relative;
         }}
         
-        /* Add terminal scan lines effect */
+        /* Subtle star field effect */
         #map:before {{
             content: '';
             position: absolute;
@@ -50,36 +50,41 @@ def create_embedded_constellation_html():
             left: 0;
             right: 0;
             bottom: 0;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(0, 255, 65, 0.03),
-                rgba(0, 255, 65, 0.03) 1px,
-                transparent 1px,
-                transparent 3px
-            );
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #ffffff, transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+                radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.6), transparent),
+                radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.4), transparent);
+            background-repeat: repeat;
+            background-size: 200px 100px;
+            opacity: 0.1;
             pointer-events: none;
-            z-index: 1000;
+            z-index: 1;
         }}
         
-        /* Terminal flicker effect */
-        @keyframes flicker {{
-            0%, 100% {{ opacity: 1; }}
-            50% {{ opacity: 0.96; }}
+        /* Futuristic glow animation */
+        @keyframes neonPulse {{
+            0%, 100% {{ opacity: 1; filter: brightness(1); }}
+            50% {{ opacity: 0.95; filter: brightness(1.05); }}
         }}
         
         body {{
-            animation: flicker 0.15s infinite linear;
+            animation: neonPulse 3s ease-in-out infinite;
         }}
         
         .ui-panel {{
             position: absolute;
             z-index: 1000;
-            background: rgba(0, 20, 0, 0.95);
-            border: 2px solid #00ff41;
-            border-radius: 0;
-            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.1);
-            font-family: 'Courier New', monospace;
-            color: #00ff41;
+            background: rgba(10, 15, 35, 0.95);
+            border: 1px solid rgba(100, 200, 255, 0.4);
+            border-radius: 12px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                0 0 20px rgba(100, 200, 255, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            color: #ffffff;
         }}
         
         .title-panel {{
@@ -105,27 +110,27 @@ def create_embedded_constellation_html():
         
         .search-input {{
             width: 100%;
-            padding: 8px 50px 8px 10px;
-            background: rgba(0, 40, 0, 0.9);
-            border: 1px solid #00ff41;
-            color: #00ff41;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
+            padding: 12px 50px 12px 16px;
+            background: rgba(15, 25, 45, 0.9);
+            border: 1px solid rgba(100, 200, 255, 0.3);
+            border-radius: 8px;
+            color: #ffffff;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            font-size: 14px;
             outline: none;
             transition: all 0.3s ease;
             box-sizing: border-box;
-            text-shadow: 0 0 3px #00ff41;
         }}
         
         .search-input:focus {{
-            border-color: #00ff66;
-            box-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
-            background: rgba(0, 50, 0, 0.95);
+            border-color: #64c8ff;
+            box-shadow: 0 0 16px rgba(100, 200, 255, 0.3);
+            background: rgba(20, 30, 50, 0.95);
         }}
         
         .search-input::placeholder {{
-            color: rgba(0, 255, 65, 0.8);
-            font-family: 'Courier New', monospace;
+            color: rgba(255, 255, 255, 0.6);
+            font-family: 'Inter', 'Segoe UI', sans-serif;
         }}
         
         .search-clear {{
@@ -133,12 +138,13 @@ def create_embedded_constellation_html():
             right: 8px;
             top: 50%;
             transform: translateY(-50%);
-            width: 30px;
-            height: 30px;
-            background: none;
-            border: none;
-            color: #00ff41;
-            font-family: 'Courier New', monospace;
+            width: 32px;
+            height: 32px;
+            background: rgba(100, 200, 255, 0.1);
+            border: 1px solid rgba(100, 200, 255, 0.3);
+            border-radius: 6px;
+            color: #64c8ff;
+            font-family: 'Inter', sans-serif;
             font-size: 14px;
             cursor: pointer;
             display: flex;
@@ -146,12 +152,12 @@ def create_embedded_constellation_html():
             justify-content: center;
             z-index: 10;
             transition: all 0.2s ease;
-            text-shadow: 0 0 3px #00ff41;
         }}
         
         .search-clear:hover {{
-            color: #00ff66;
-            text-shadow: 0 0 5px #00ff66;
+            background: rgba(100, 200, 255, 0.2);
+            color: #ffffff;
+            box-shadow: 0 0 8px rgba(100, 200, 255, 0.4);
         }}
         
         .search-suggestions {{
@@ -159,46 +165,49 @@ def create_embedded_constellation_html():
             top: 100%;
             left: 0;
             right: 0;
-            max-height: 200px;
+            max-height: 250px;
             overflow-y: auto;
-            background: rgba(0, 40, 0, 0.95);
-            border: 1px solid #00ff41;
+            background: rgba(15, 25, 45, 0.95);
+            border: 1px solid rgba(100, 200, 255, 0.3);
             border-top: none;
+            border-radius: 0 0 8px 8px;
+            backdrop-filter: blur(10px);
             z-index: 1002;
             display: none;
-            font-family: 'Courier New', monospace;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
         }}
         
         .suggestion-item {{
-            padding: 8px 10px;
+            padding: 12px 16px;
             cursor: pointer;
-            border-bottom: 1px solid rgba(0, 255, 65, 0.2);
+            border-bottom: 1px solid rgba(100, 200, 255, 0.1);
             transition: all 0.2s ease;
         }}
         
         .suggestion-item:hover, .suggestion-item.highlighted {{
-            background: rgba(0, 255, 65, 0.2);
-            text-shadow: 0 0 3px #00ff41;
+            background: rgba(100, 200, 255, 0.1);
+            border-left: 3px solid #64c8ff;
         }}
         
         .suggestion-name {{
-            color: #00ff41;
-            font-weight: bold;
-            font-family: 'Courier New', monospace;
+            color: #ffffff;
+            font-weight: 600;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
         }}
         
         .suggestion-type {{
-            color: #00cccc;
-            font-size: 10px;
-            margin-left: 6px;
-            font-family: 'Courier New', monospace;
+            color: #64c8ff;
+            font-size: 12px;
+            margin-left: 8px;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            font-weight: 500;
         }}
         
         .suggestion-stats {{
-            color: rgba(0, 255, 65, 0.7);
-            font-size: 9px;
-            margin-top: 2px;
-            font-family: 'Courier New', monospace;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 11px;
+            margin-top: 4px;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
         }}
         
         .search-active-indicator {{
@@ -213,21 +222,23 @@ def create_embedded_constellation_html():
         }}
         
         .title-panel h1 {{
-            margin: 0 0 10px 0;
-            font-size: 22px;
-            font-family: 'Courier New', monospace;
-            color: #00ff41;
-            text-shadow: 0 0 5px #00ff41;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-weight: bold;
+            margin: 0 0 16px 0;
+            font-size: 28px;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            color: #ffffff;
+            font-weight: 700;
+            background: linear-gradient(135deg, #64c8ff 0%, #ffffff 50%, #ff6b9d 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }}
         
         .title-panel p {{
-            margin: 5px 0;
-            font-size: 12px;
-            font-family: 'Courier New', monospace;
-            color: rgba(0, 255, 65, 0.8);
+            margin: 8px 0;
+            font-size: 14px;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 400;
         }}
         
         .controls-panel {{
@@ -269,24 +280,26 @@ def create_embedded_constellation_html():
         }}
         
         .panel-title {{
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            margin-bottom: 10px;
-            font-size: 14px;
-            color: #00ff41;
-            border-bottom: 1px solid rgba(0, 255, 65, 0.5);
-            padding-bottom: 5px;
-            text-shadow: 0 0 3px #00ff41;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            font-weight: 600;
+            margin-bottom: 16px;
+            font-size: 16px;
+            color: #64c8ff;
+            border-bottom: 2px solid rgba(100, 200, 255, 0.3);
+            padding-bottom: 8px;
+            text-transform: none;
+            letter-spacing: 0.5px;
         }}
         
-        /* Custom marker styles */
+        /* Custom marker styles - futuristic neon */
         .galaxy-marker {{
-            background: radial-gradient(circle, #ff6600 30%, #ff8800 100%);
-            border: 2px solid #ffaa00;
+            background: radial-gradient(circle, #ff3366 20%, #ff6600 60%, #ffaa00 100%);
+            border: 2px solid #ff6600;
             border-radius: 50%;
-            box-shadow: 0 0 15px rgba(255, 136, 0, 0.8);
+            box-shadow: 
+                0 0 20px rgba(255, 102, 0, 0.8),
+                0 0 40px rgba(255, 102, 0, 0.4),
+                inset 0 0 10px rgba(255, 255, 255, 0.2);
             width: 100%;
             height: 100%;
             position: relative;
@@ -295,45 +308,53 @@ def create_embedded_constellation_html():
         .galaxy-marker:after {{
             content: '';
             position: absolute;
-            top: 2px;
-            left: 2px;
-            right: 2px;
-            bottom: 2px;
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            top: 3px;
+            left: 3px;
+            right: 3px;
+            bottom: 3px;
+            border: 1px solid rgba(255, 255, 255, 0.6);
             border-radius: 50%;
         }}
         
         .cluster-marker {{
-            background: radial-gradient(circle, #00ffff 30%, #00cccc 100%);
-            border: 2px solid #00eeee;
+            background: radial-gradient(circle, #00f5ff 20%, #00bfff 60%, #0080ff 100%);
+            border: 2px solid #00bfff;
             border-radius: 50%;
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
+            box-shadow: 
+                0 0 18px rgba(0, 191, 255, 0.8),
+                0 0 35px rgba(0, 191, 255, 0.4);
             width: 100%;
             height: 100%;
         }}
         
         .solar-system-marker {{
-            background: radial-gradient(circle, #ff00ff 30%, #cc00cc 100%);
-            border: 2px solid #ee00ee;
+            background: radial-gradient(circle, #ff00ff 20%, #cc00ff 60%, #9900cc 100%);
+            border: 2px solid #cc00ff;
             border-radius: 50%;
-            box-shadow: 0 0 12px rgba(255, 0, 255, 0.6);
+            box-shadow: 
+                0 0 16px rgba(204, 0, 255, 0.8),
+                0 0 30px rgba(204, 0, 255, 0.4);
             width: 100%;
             height: 100%;
         }}
         
         .star-marker {{
-            background: radial-gradient(circle, #00ff41 30%, #00cc33 100%);
+            background: radial-gradient(circle, #00ff80 20%, #00ff41 60%, #00cc33 100%);
             border: 1px solid #00ff66;
             border-radius: 50%;
-            box-shadow: 0 0 8px rgba(0, 255, 65, 0.6);
+            box-shadow: 
+                0 0 12px rgba(0, 255, 102, 0.8),
+                0 0 24px rgba(0, 255, 102, 0.3);
             width: 100%;
             height: 100%;
-            transition: transform 0.2s ease;
+            transition: all 0.2s ease;
         }}
         
         .star-marker:hover {{
-            transform: scale(1.5);
-            box-shadow: 0 0 15px rgba(0, 255, 65, 0.9);
+            transform: scale(1.4);
+            box-shadow: 
+                0 0 20px rgba(0, 255, 102, 1),
+                0 0 40px rgba(0, 255, 102, 0.6);
         }}
         
         .star-marker-optimized {{
@@ -351,13 +372,15 @@ def create_embedded_constellation_html():
         }}
         
         .galaxy-label, .cluster-label, .solar-system-label {{
-            background-color: rgba(0, 0, 0, 0.9);
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            padding: 3px 8px;
+            background: rgba(10, 15, 35, 0.95);
+            backdrop-filter: blur(8px);
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            font-weight: 600;
+            padding: 8px 12px;
             border: 1px solid;
+            border-radius: 6px;
             white-space: nowrap;
-            transition: opacity 0.3s ease-in-out;
+            transition: all 0.3s ease;
             text-align: center;
             transform: translateX(-50%);
             display: inline-block;
@@ -367,46 +390,56 @@ def create_embedded_constellation_html():
         }}
         
         .galaxy-label {{
-            font-size: 12px;
+            font-size: 13px;
             color: #ff6600;
-            border-color: #ff6600;
-            text-shadow: 0 0 5px #ff6600, 0 0 2px #000;
-            box-shadow: 0 0 8px rgba(255, 102, 0, 0.4);
+            border-color: rgba(255, 102, 0, 0.5);
+            text-shadow: 0 0 8px rgba(255, 102, 0, 0.8);
+            box-shadow: 
+                0 4px 16px rgba(255, 102, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }}
         
         .cluster-label {{
-            font-size: 11px;
-            color: #00ffff;
-            border-color: #00ffff;
-            text-shadow: 0 0 5px #00ffff, 0 0 2px #000;
-            box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+            font-size: 12px;
+            color: #00bfff;
+            border-color: rgba(0, 191, 255, 0.5);
+            text-shadow: 0 0 8px rgba(0, 191, 255, 0.8);
+            box-shadow: 
+                0 4px 16px rgba(0, 191, 255, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }}
         
         .solar-system-label {{
-            font-size: 10px;
-            color: #ff00ff;
-            border-color: #ff00ff;
-            text-shadow: 0 0 5px #ff00ff, 0 0 2px #000;
-            box-shadow: 0 0 8px rgba(255, 0, 255, 0.4);
+            font-size: 11px;
+            color: #cc00ff;
+            border-color: rgba(204, 0, 255, 0.5);
+            text-shadow: 0 0 8px rgba(204, 0, 255, 0.8);
+            box-shadow: 
+                0 4px 16px rgba(204, 0, 255, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }}
         
         /* Popup styling */
         .leaflet-popup-content-wrapper {{
-            background: rgba(0, 40, 0, 0.95);
-            border: 1px solid #00ff41;
-            box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+            background: rgba(10, 15, 35, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(100, 200, 255, 0.4);
+            border-radius: 12px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                0 0 20px rgba(100, 200, 255, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }}
         
         .leaflet-popup-content {{
-            color: #00ff41;
-            margin: 12px;
-            font-family: 'Courier New', monospace;
-            text-shadow: 0 0 3px #00ff41;
+            color: #ffffff;
+            margin: 16px;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
         }}
         
         .leaflet-popup-tip {{
-            background: rgba(0, 40, 0, 0.95);
-            border: 1px solid #00ff41;
+            background: rgba(10, 15, 35, 0.95);
+            border: 1px solid rgba(100, 200, 255, 0.4);
         }}
         
         .goal-info {{
@@ -415,34 +448,32 @@ def create_embedded_constellation_html():
         }}
         
         .goal-info h3 {{
-            margin: 0 0 12px 0;
-            color: #00ff41;
-            border-bottom: 1px solid #00ff41;
-            padding-bottom: 8px;
-            font-size: 14px;
-            font-family: 'Courier New', monospace;
-            text-shadow: 0 0 3px #00ff41;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            margin: 0 0 16px 0;
+            color: #64c8ff;
+            border-bottom: 2px solid rgba(100, 200, 255, 0.3);
+            padding-bottom: 12px;
+            font-size: 18px;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            font-weight: 600;
             display: flex;
             align-items: center;
         }}
         
         .goal-info h3::before {{
-            content: "*";
-            margin-right: 6px;
-            font-size: 16px;
+            content: "⭐";
+            margin-right: 8px;
+            font-size: 20px;
         }}
         
         .goal-detail {{
-            margin: 6px 0;
+            margin: 12px 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 3px 0;
-            border-bottom: 1px solid rgba(0, 255, 65, 0.2);
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(100, 200, 255, 0.1);
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            font-size: 13px;
         }}
         
         .goal-detail:last-child {{
@@ -450,9 +481,9 @@ def create_embedded_constellation_html():
         }}
         
         .goal-detail strong {{
-            color: #00cccc;
-            font-weight: bold;
-            font-family: 'Courier New', monospace;
+            color: #64c8ff;
+            font-weight: 600;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
             min-width: 100px;
         }}
         
@@ -663,19 +694,19 @@ def create_embedded_constellation_html():
     <div class="ui-panel legend-panel">
         <div class="panel-title">Color Legend</div>
         <div class="legend-item">
-            <div class="legend-color" style="background: radial-gradient(circle, #ff6600 30%, #ff8800 100%);"></div>
+            <div class="legend-color" style="background: radial-gradient(circle, #ff3366 20%, #ff6600 60%, #ffaa00 100%); box-shadow: 0 0 10px rgba(255, 102, 0, 0.5);"></div>
             <span><strong>Galaxies</strong> - Spatial + shot type clusters</span>
         </div>
         <div class="legend-item">
-            <div class="legend-color" style="background: radial-gradient(circle, #00ffff 30%, #00cccc 100%);"></div>
+            <div class="legend-color" style="background: radial-gradient(circle, #00f5ff 20%, #00bfff 60%, #0080ff 100%); box-shadow: 0 0 10px rgba(0, 191, 255, 0.5);"></div>
             <span><strong>Clusters</strong> - Game context groups</span>
         </div>
         <div class="legend-item">
-            <div class="legend-color" style="background: radial-gradient(circle, #ff00ff 30%, #cc00cc 100%);"></div>
+            <div class="legend-color" style="background: radial-gradient(circle, #ff00ff 20%, #cc00ff 60%, #9900cc 100%); box-shadow: 0 0 10px rgba(204, 0, 255, 0.5);"></div>
             <span><strong>Solar Systems</strong> - Goalie groupings</span>
         </div>
         <div class="legend-item">
-            <div class="legend-color" style="background: radial-gradient(circle, #00ff41 30%, #00cc33 100%);"></div>
+            <div class="legend-color" style="background: radial-gradient(circle, #00ff80 20%, #00ff41 60%, #00cc33 100%); box-shadow: 0 0 10px rgba(0, 255, 102, 0.5);"></div>
             <span><strong>Stars</strong> - Individual goals</span>
         </div>
     </div>
@@ -2294,8 +2325,9 @@ def create_embedded_constellation_html():
             const relevantGoals = selectedPlayer.data.type === 'player' ? 
                 selectedPlayer.data.goals : selectedPlayer.data.goalsAgainst;
             
-            // Find visible components containing this player/goalie (viewport-only)
+            // Find visible components containing this player/goalie with goal counts
             const visibleComponents = [];
+            const componentGoalCounts = new Map(); // Track goal count per component
             
             if (zoom >= 4.5) {{
                 // Individual goals level - connect rendered stars in viewport
@@ -2303,81 +2335,167 @@ def create_embedded_constellation_html():
                     if (renderedStars.has(stars.indexOf(goal))) {{
                         const coord = [goal.geometry.coordinates[1], goal.geometry.coordinates[0]];
                         if (bounds.contains(coord)) {{
-                            visibleComponents.push(coord);
+                            const coordKey = `${{coord[0]}},${{coord[1]}}`;
+                            visibleComponents.push({{coord, name: `star_${{index}}`, type: 'star'}});
+                            componentGoalCounts.set(coordKey, 1); // Each star represents 1 goal
                         }}
                     }}
                 }});
             }} else if (zoom >= 2.5) {{
                 // Solar system level - connect solar systems containing this player in viewport
-                const solarSystemsWithPlayer = new Set();
+                const solarSystemGoalCounts = new Map();
                 relevantGoals.forEach(goal => {{
                     const solarSystemName = goal.properties.solar_system;
                     if (solarSystemName) {{
-                        solarSystemsWithPlayer.add(solarSystemName);
+                        solarSystemGoalCounts.set(solarSystemName, (solarSystemGoalCounts.get(solarSystemName) || 0) + 1);
                     }}
                 }});
                 
                 solarSystems.forEach(system => {{
-                    if (solarSystemsWithPlayer.has(system.properties.name)) {{
+                    if (solarSystemGoalCounts.has(system.properties.name)) {{
                         const coord = [system.geometry.coordinates[1], system.geometry.coordinates[0]];
                         if (bounds.contains(coord)) {{
-                            visibleComponents.push(coord);
+                            const coordKey = `${{coord[0]}},${{coord[1]}}`;
+                            visibleComponents.push({{coord, name: system.properties.name, type: 'solar_system'}});
+                            componentGoalCounts.set(coordKey, solarSystemGoalCounts.get(system.properties.name));
                         }}
                     }}
                 }});
             }} else if (zoom >= 0.5) {{
                 // Cluster level - connect clusters containing this player in viewport
-                const clustersWithPlayer = new Set();
+                const clusterGoalCounts = new Map();
                 relevantGoals.forEach(goal => {{
                     const clusterName = goal.properties.cluster;
                     if (clusterName) {{
-                        clustersWithPlayer.add(clusterName);
+                        clusterGoalCounts.set(clusterName, (clusterGoalCounts.get(clusterName) || 0) + 1);
                     }}
                 }});
                 
                 clusters.forEach(cluster => {{
-                    if (clustersWithPlayer.has(cluster.properties.name)) {{
+                    if (clusterGoalCounts.has(cluster.properties.name)) {{
                         const coord = [cluster.geometry.coordinates[1], cluster.geometry.coordinates[0]];
                         if (bounds.contains(coord)) {{
-                            visibleComponents.push(coord);
+                            const coordKey = `${{coord[0]}},${{coord[1]}}`;
+                            visibleComponents.push({{coord, name: cluster.properties.name, type: 'cluster'}});
+                            componentGoalCounts.set(coordKey, clusterGoalCounts.get(cluster.properties.name));
                         }}
                     }}
                 }});
             }} else {{
                 // Galaxy level - connect galaxies containing this player in viewport
-                const galaxiesWithPlayer = new Set();
+                const galaxyGoalCounts = new Map();
                 relevantGoals.forEach(goal => {{
                     const galaxyName = goal.properties.galaxy;
                     if (galaxyName) {{
-                        galaxiesWithPlayer.add(galaxyName);
+                        galaxyGoalCounts.set(galaxyName, (galaxyGoalCounts.get(galaxyName) || 0) + 1);
                     }}
                 }});
                 
                 galaxies.forEach(galaxy => {{
-                    if (galaxiesWithPlayer.has(galaxy.properties.name)) {{
+                    if (galaxyGoalCounts.has(galaxy.properties.name)) {{
                         const coord = [galaxy.geometry.coordinates[1], galaxy.geometry.coordinates[0]];
                         if (bounds.contains(coord)) {{
-                            visibleComponents.push(coord);
+                            const coordKey = `${{coord[0]}},${{coord[1]}}`;
+                            visibleComponents.push({{coord, name: galaxy.properties.name, type: 'galaxy'}});
+                            componentGoalCounts.set(coordKey, galaxyGoalCounts.get(galaxy.properties.name));
                         }}
                     }}
                 }});
             }}
             
-            // Draw lines between visible components in viewport
+            // Draw weighted lines between visible components in viewport
             if (visibleComponents.length > 1) {{
+                // Find the maximum goal count for normalization
+                const maxGoals = Math.max(...Array.from(componentGoalCounts.values()));
+                const minGoals = Math.min(...Array.from(componentGoalCounts.values()));
+                
                 for (let i = 0; i < visibleComponents.length - 1; i++) {{
                     for (let j = i + 1; j < visibleComponents.length; j++) {{
-                        const line = L.polyline([visibleComponents[i], visibleComponents[j]], {{
-                            color: '#ffd700',
-                            weight: 2,
-                            opacity: 0.6,
-                            dashArray: '5, 10'
-                        }});
-                        connectionLines.addLayer(line);
+                        const coord1 = visibleComponents[i].coord;
+                        const coord2 = visibleComponents[j].coord;
+                        const coordKey1 = `${{coord1[0]}},${{coord1[1]}}`;
+                        const coordKey2 = `${{coord2[0]}},${{coord2[1]}}`;
+                        
+                        const goals1 = componentGoalCounts.get(coordKey1) || 1;
+                        const goals2 = componentGoalCounts.get(coordKey2) || 1;
+                        
+                        // Determine which end has more goals
+                        const maxGoalsEnd = Math.max(goals1, goals2);
+                        const minGoalsEnd = Math.min(goals1, goals2);
+                        const totalGoals = goals1 + goals2;
+                        
+                        // Calculate weights for each end (1-8 range)
+                        const maxWeight = Math.max(2, Math.min(8, 2 + (maxGoalsEnd - 1) / Math.max(1, maxGoals - 1) * 6));
+                        const minWeight = Math.max(1, Math.min(maxWeight - 1, 1 + (minGoalsEnd - 1) / Math.max(1, maxGoals - 1) * 3));
+                        
+                        // Determine coordinate order (thick end first)
+                        let startCoord, endCoord, startWeight, endWeight;
+                        if (goals1 >= goals2) {{
+                            startCoord = coord1;
+                            endCoord = coord2;
+                            startWeight = maxWeight;
+                            endWeight = minWeight;
+                        }} else {{
+                            startCoord = coord2;
+                            endCoord = coord1;
+                            startWeight = maxWeight;
+                            endWeight = minWeight;
+                        }}
+                        
+                        // Calculate opacity based on goal distribution balance
+                        const goalBalance = minGoalsEnd / maxGoalsEnd;
+                        const baseOpacity = 0.5 + (goalBalance * 0.3); // 0.5 to 0.8 based on balance
+                        
+                        // Choose color based on the component types and goal counts
+                        let lineColor = '#64c8ff'; // Default futuristic blue
+                        if (zoom < 0.5) {{
+                            lineColor = '#ff6600'; // Galaxy connections - orange
+                        }} else if (zoom < 2.5) {{
+                            lineColor = '#00bfff'; // Cluster connections - bright blue
+                        }} else if (zoom < 4.5) {{
+                            lineColor = '#cc00ff'; // Solar system connections - magenta
+                        }} else {{
+                            lineColor = '#00ff66'; // Star connections - green
+                        }}
+                        
+                        // Create gradient line by drawing multiple segments
+                        const segments = 8; // Number of segments for smooth gradient
+                        const weightDiff = startWeight - endWeight;
+                        
+                        for (let seg = 0; seg < segments; seg++) {{
+                            const segmentStart = seg / segments;
+                            const segmentEnd = (seg + 1) / segments;
+                            
+                            // Interpolate coordinates
+                            const segStartLat = startCoord[0] + (endCoord[0] - startCoord[0]) * segmentStart;
+                            const segStartLng = startCoord[1] + (endCoord[1] - startCoord[1]) * segmentStart;
+                            const segEndLat = startCoord[0] + (endCoord[0] - startCoord[0]) * segmentEnd;
+                            const segEndLng = startCoord[1] + (endCoord[1] - startCoord[1]) * segmentEnd;
+                            
+                            // Calculate weight for this segment (linear interpolation)
+                            const segmentWeight = startWeight - (weightDiff * segmentStart);
+                            
+                            // Calculate opacity for this segment (slightly fade towards thinner end)
+                            const segmentOpacity = baseOpacity * (0.8 + 0.2 * (1 - segmentStart));
+                            
+                            const segment = L.polyline([
+                                [segStartLat, segStartLng],
+                                [segEndLat, segEndLng]
+                            ], {{
+                                color: lineColor,
+                                weight: segmentWeight,
+                                opacity: segmentOpacity,
+                                dashArray: segmentWeight > 3 ? 'none' : '6, 3',
+                                lineCap: 'round',
+                                lineJoin: 'round'
+                            }});
+                            connectionLines.addLayer(segment);
+                        }}
                     }}
                 }}
                 
-                console.log(`Drew ${{connectionLines.getLayers().length}} connection lines for ${{selectedPlayer.name}} (viewport only)`);
+                console.log(`Drew ${{connectionLines.getLayers().length}} gradient connection segments for ${{selectedPlayer.name}} (viewport only)`);
+                console.log(`Goal counts per component:`, Array.from(componentGoalCounts.entries()).map(([key, count]) => `${{key.split(',')[0].slice(0,6)}}: ${{count}} goals`));
             }}
         }}
         
