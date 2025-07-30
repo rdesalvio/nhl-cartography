@@ -72,8 +72,8 @@ def create_embedded_constellation_html():
         }}
         
         .search-input {{
-            width: calc(100% - 24px);
-            padding: 10px 44px 10px 12px;
+            width: 100%;
+            padding: 10px 50px 10px 12px;
             background: rgba(20, 20, 30, 0.9);
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 6px;
@@ -91,19 +91,21 @@ def create_embedded_constellation_html():
         
         .search-clear {{
             position: absolute;
-            right: 12px;
-            top: 12px;
-            bottom: 12px;
-            width: 20px;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 30px;
             background: none;
             border: none;
             color: #ffd700;
-            font-size: 14px;
+            font-size: 16px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 4px;
+            z-index: 10;
             transition: background-color 0.2s ease;
         }}
         
