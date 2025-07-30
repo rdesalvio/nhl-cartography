@@ -6,8 +6,146 @@ import hdbscan
 import umap
 from datetime import datetime
 import os
+import time
+import logging
 import warnings
 warnings.filterwarnings('ignore')
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# AI for dynamic cluster naming
+try:
+    import anthropic
+    # API key will be read from environment variable ANTHROPIC_API_KEY
+    anthropic_client = anthropic.Anthropic()
+    AI_AVAILABLE = True
+    logger.info("Anthropic Claude API configured successfully")
+except ImportError:
+    AI_AVAILABLE = False
+    logger.warning("Anthropic API not available - using generic names")
+except Exception as e:
+    AI_AVAILABLE = False
+    logger.warning(f"Failed to configure Anthropic API: {e} - using generic names")
+
+# Global variables for naming system
+generated_names = {
+    'galaxy': set(),
+    'cluster': set(),
+    'solar system': set(),  
+    'star': set()
+}
+
+# Rate limiting for Anthropic API
+last_api_call_time = 0
+api_rate_limit_seconds = 0.5  # Conservative 0.5 second between calls
+
+def generate_cluster_name(level_name, cluster_goals, features_used):
+    """
+    Generate a unique astronomical cluster name using AI based on cluster context.
+    
+    Args:
+        level_name: Type of celestial object (galaxy, cluster, solar system, star)
+        cluster_goals: DataFrame of goals in this cluster
+        features_used: List of features used for clustering at this level
+        
+    Returns:
+        str: Generated astronomical name
+    """
+    global last_api_call_time, generated_names
+    
+    if not AI_AVAILABLE:
+        # Fallback to generic naming
+        base_name = f"{level_name}_{len(generated_names[level_name])}"
+        generated_names[level_name].add(base_name)
+        return base_name
+    
+    try:
+        # Rate limiting: conservative delay for Anthropic API
+        current_time = time.time()
+        time_since_last_call = current_time - last_api_call_time
+        
+        if time_since_last_call < api_rate_limit_seconds:
+            sleep_time = api_rate_limit_seconds - time_since_last_call
+            logger.info(f"Rate limiting: sleeping for {sleep_time:.2f} seconds")
+            time.sleep(sleep_time)
+        
+        # Prepare cluster context information
+        context_info = []
+        
+        # Analyze features used for clustering
+        if 'shot_zone' in features_used:
+            shot_zones = cluster_goals['shot_zone'].value_counts().head(3)
+            context_info.append(f"Common shot zones: {', '.join([f'{zone} ({count})' for zone, count in shot_zones.items()])}")
+
+        if 'situation' in features_used:
+            situations = cluster_goals['situation'].value_counts().head(3)
+            context_info.append(f"Common situations: {', '.join([f'{situation} ({count})' for situation, count in situations.items()])}")
+        
+        if 'shot_type' in features_used:
+            shot_types = cluster_goals['shot_type'].value_counts().head(3)
+            context_info.append(f"Common shot types: {', '.join([f'{shot} ({count})' for shot, count in shot_types.items()])}")
+        
+        if 'period' in features_used:
+            periods = cluster_goals['period'].value_counts().head(3)
+            context_info.append(f"Game periods: {', '.join([f'Period {period} ({count})' for period, count in periods.items()])}")
+        
+        if 'team_score' in features_used or 'opponent_score' in features_used:
+            avg_team_score = cluster_goals['team_score'].mean()
+            avg_opp_score = cluster_goals['opponent_score'].mean()
+            context_info.append(f"Average score context: {avg_team_score:.1f} - {avg_opp_score:.1f}")
+        
+        if 'player_name' in features_used:
+            top_players = cluster_goals['player_name'].value_counts().head(3)
+            context_info.append(f"Top players: {', '.join([f'{player} ({count})' for player, count in top_players.items()])}")
+        
+        if 'goalie' in features_used or 'goalie_name' in features_used:
+            goalie_col = 'goalie_name' if 'goalie_name' in cluster_goals.columns else 'goalie'
+            top_goalies = cluster_goals[goalie_col].value_counts().head(3)
+            context_info.append(f"Goalies faced: {', '.join([f'{goalie} ({count})' for goalie, count in top_goalies.items()])}")
+        
+        # Build the prompt
+        context_str = '; '.join(context_info)
+        
+        prompt = f"""You are tasked with creating a {level_name} name for a project which maps all of the goals scored in the NHL into a constellation map. The name should make sense based on the attributes of the goals contained in the cluster and should resemble names used in astronomy for our real universe.
+
+Some context for the goals in this grouping are: {context_str}.
+
+Please provide only the name (2-3 words maximum), no explanation. The name should be evocative of the goal characteristics and follow astronomical naming conventions."""
+        
+        # Generate name using Claude
+        response = anthropic_client.messages.create(
+            model="claude-3-5-haiku-20241022",
+            max_tokens=50,
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+        
+        # Update last API call time for rate limiting
+        last_api_call_time = time.time()
+        
+        generated_name = response.content[0].text.strip().replace('"', '').replace("'", "")
+        
+        # Ensure uniqueness
+        if generated_name in generated_names[level_name]:
+            # Add a suffix if name already exists
+            counter = 1
+            while f"{generated_name} {counter}" in generated_names[level_name]:
+                counter += 1
+            generated_name = f"{generated_name} {counter}"
+        
+        generated_names[level_name].add(generated_name)
+        logger.info(f"Generated {level_name} name: '{generated_name}'")
+        return generated_name
+        
+    except Exception as e:
+        logger.warning(f"Failed to generate AI name for {level_name}: {e}")
+        # Fallback to generic naming
+        base_name = f"{level_name}_{len(generated_names[level_name])}"
+        generated_names[level_name].add(base_name)
+        return base_name
 
 def get_zones(x, y):
     x = float(x)
@@ -539,8 +677,37 @@ def cluster_by_player_similarity(df_original, df_subset, cluster_labels):
     return solar_system_labels
 
 def create_goal_hierarchy_mapping_FIXED(galaxy_labels, cluster_labels, solar_system_labels, df_subset, df_original):
-    """Create goal hierarchy mapping with proper star assignments"""
-    print("Creating goal hierarchy mapping with FIXED star assignments...")
+    """Create goal hierarchy mapping with proper star assignments and AI-generated names"""
+    print("Creating goal hierarchy mapping with FIXED star assignments and AI naming...")
+    
+    # Generate names for each unique cluster at each level
+    galaxy_names = {}
+    cluster_names = {}
+    solar_system_names = {}
+    
+    # Generate galaxy names
+    unique_galaxies = np.unique(galaxy_labels)
+    for galaxy_id in unique_galaxies:
+        galaxy_mask = galaxy_labels == galaxy_id
+        galaxy_goals = df_original.loc[df_subset.index[galaxy_mask]]
+        features_used = ['shot_zone', 'shot_type', 'situation']  # Features used for galaxy clustering
+        galaxy_names[galaxy_id] = generate_cluster_name('galaxy', galaxy_goals, features_used)
+    
+    # Generate cluster names  
+    unique_clusters = np.unique(cluster_labels[cluster_labels >= 0])
+    for cluster_id in unique_clusters:
+        cluster_mask = cluster_labels == cluster_id
+        cluster_goals = df_original.loc[df_subset.index[cluster_mask]]
+        features_used = ['game_time', 'team_score', 'opponent_score']  # Features used for cluster clustering
+        cluster_names[cluster_id] = generate_cluster_name('cluster', cluster_goals, features_used)
+    
+    # Generate solar system names
+    unique_solar_systems = np.unique(solar_system_labels[solar_system_labels >= 0])
+    for solar_system_id in unique_solar_systems:
+        solar_system_mask = solar_system_labels == solar_system_id
+        solar_system_goals = df_original.loc[df_subset.index[solar_system_mask]]
+        features_used = ['goalie_name']  # Features used for solar system clustering
+        solar_system_names[solar_system_id] = generate_cluster_name('solar system', solar_system_goals, features_used)
     
     # Create mapping data
     mapping_data = []
@@ -567,10 +734,10 @@ def create_goal_hierarchy_mapping_FIXED(galaxy_labels, cluster_labels, solar_sys
         goals_in_same_system = goals_by_solar_system[solar_system_id]
         star_id = goals_in_same_system.index(i)  # 0-based index within this solar system
         
-        # Create hierarchical path components
-        galaxy_name = f"galaxy_{galaxy_id}"
-        cluster_name = f"cluster_{cluster_id}"
-        solar_system_name = f"solar system_{solar_system_id}"
+        # Create hierarchical path components using AI-generated names
+        galaxy_name = galaxy_names[galaxy_id]
+        cluster_name = cluster_names[cluster_id]
+        solar_system_name = solar_system_names[solar_system_id]
         star_name = f"star_{star_id}"  # Now relative to solar system!
         
         # Create full hierarchy path
@@ -666,6 +833,16 @@ def main():
     print(f"Clusters (temporal/game state): {n_clusters}")
     print(f"Solar Systems (goalie similarity): {n_solar_systems}")
     print(f"Stars: {len(mapping_df)}")
+    
+    # Show sample AI-generated names
+    print(f"\n=== SAMPLE AI-GENERATED NAMES ===")
+    sample_galaxies = mapping_df['level_0_cluster'].unique()[:3]
+    sample_clusters = mapping_df['level_1_cluster'].unique()[:3]
+    sample_solar_systems = mapping_df['level_2_cluster'].unique()[:3]
+    
+    print("Sample Galaxies:", ", ".join(sample_galaxies))
+    print("Sample Clusters:", ", ".join(sample_clusters))
+    print("Sample Solar Systems:", ", ".join(sample_solar_systems))
     
     # Verify the fix
     print(f"\n=== VERIFICATION ===")

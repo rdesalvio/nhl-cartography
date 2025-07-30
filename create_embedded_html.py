@@ -28,26 +28,58 @@ def create_embedded_constellation_html():
         body {{
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #000;
-            color: white;
+            font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+            background: #0a0a0a;
+            color: #00ff41;
             overflow: hidden;
+            image-rendering: pixelated;
         }}
         
         #map {{
             height: 100vh;
             width: 100vw;
-            background: radial-gradient(ellipse at center, #1a1a2e 0%, #000000 100%);
+            background: linear-gradient(180deg, #001100 0%, #000800 50%, #000000 100%);
+            position: relative;
+        }}
+        
+        /* Add terminal scan lines effect */
+        #map:before {{
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 255, 65, 0.03),
+                rgba(0, 255, 65, 0.03) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+            pointer-events: none;
+            z-index: 1000;
+        }}
+        
+        /* Terminal flicker effect */
+        @keyframes flicker {{
+            0%, 100% {{ opacity: 1; }}
+            50% {{ opacity: 0.96; }}
+        }}
+        
+        body {{
+            animation: flicker 0.15s infinite linear;
         }}
         
         .ui-panel {{
             position: absolute;
             z-index: 1000;
-            background: rgba(0, 0, 0, 0.85);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            background: rgba(0, 20, 0, 0.95);
+            border: 2px solid #00ff41;
+            border-radius: 0;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.1);
+            font-family: 'Courier New', monospace;
+            color: #00ff41;
         }}
         
         .title-panel {{
@@ -73,20 +105,27 @@ def create_embedded_constellation_html():
         
         .search-input {{
             width: 100%;
-            padding: 10px 50px 10px 12px;
-            background: rgba(20, 20, 30, 0.9);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 6px;
-            color: white;
-            font-size: 14px;
+            padding: 8px 50px 8px 10px;
+            background: rgba(0, 40, 0, 0.9);
+            border: 1px solid #00ff41;
+            color: #00ff41;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
             outline: none;
-            transition: border-color 0.3s ease;
+            transition: all 0.3s ease;
             box-sizing: border-box;
+            text-shadow: 0 0 3px #00ff41;
         }}
         
         .search-input:focus {{
-            border-color: #ffd700;
-            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+            border-color: #00ff66;
+            box-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
+            background: rgba(0, 50, 0, 0.95);
+        }}
+        
+        .search-input::placeholder {{
+            color: rgba(0, 255, 65, 0.8);
+            font-family: 'Courier New', monospace;
         }}
         
         .search-clear {{
@@ -98,19 +137,21 @@ def create_embedded_constellation_html():
             height: 30px;
             background: none;
             border: none;
-            color: #ffd700;
-            font-size: 16px;
+            color: #00ff41;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 4px;
             z-index: 10;
-            transition: background-color 0.2s ease;
+            transition: all 0.2s ease;
+            text-shadow: 0 0 3px #00ff41;
         }}
         
         .search-clear:hover {{
-            background-color: rgba(255, 215, 0, 0.2);
+            color: #00ff66;
+            text-shadow: 0 0 5px #00ff66;
         }}
         
         .search-suggestions {{
@@ -120,40 +161,44 @@ def create_embedded_constellation_html():
             right: 0;
             max-height: 200px;
             overflow-y: auto;
-            background: rgba(10, 10, 20, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(0, 40, 0, 0.95);
+            border: 1px solid #00ff41;
             border-top: none;
-            border-radius: 0 0 6px 6px;
             z-index: 1002;
             display: none;
+            font-family: 'Courier New', monospace;
         }}
         
         .suggestion-item {{
-            padding: 10px 12px;
+            padding: 8px 10px;
             cursor: pointer;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            transition: background-color 0.2s ease;
+            border-bottom: 1px solid rgba(0, 255, 65, 0.2);
+            transition: all 0.2s ease;
         }}
         
         .suggestion-item:hover, .suggestion-item.highlighted {{
-            background: rgba(255, 215, 0, 0.2);
+            background: rgba(0, 255, 65, 0.2);
+            text-shadow: 0 0 3px #00ff41;
         }}
         
         .suggestion-name {{
-            color: white;
+            color: #00ff41;
             font-weight: bold;
+            font-family: 'Courier New', monospace;
         }}
         
         .suggestion-type {{
-            color: #ffd700;
-            font-size: 12px;
-            margin-left: 8px;
+            color: #00cccc;
+            font-size: 10px;
+            margin-left: 6px;
+            font-family: 'Courier New', monospace;
         }}
         
         .suggestion-stats {{
-            color: #aaa;
-            font-size: 11px;
+            color: rgba(0, 255, 65, 0.7);
+            font-size: 9px;
             margin-top: 2px;
+            font-family: 'Courier New', monospace;
         }}
         
         .search-active-indicator {{
@@ -169,17 +214,20 @@ def create_embedded_constellation_html():
         
         .title-panel h1 {{
             margin: 0 0 10px 0;
-            font-size: 28px;
-            background: linear-gradient(45deg, #ffd700, #ff6b6b);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 22px;
+            font-family: 'Courier New', monospace;
+            color: #00ff41;
+            text-shadow: 0 0 5px #00ff41;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: bold;
         }}
         
         .title-panel p {{
             margin: 5px 0;
-            font-size: 14px;
-            color: #ccc;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            color: rgba(0, 255, 65, 0.8);
         }}
         
         .controls-panel {{
@@ -221,48 +269,71 @@ def create_embedded_constellation_html():
         }}
         
         .panel-title {{
+            font-family: 'Courier New', monospace;
             font-weight: bold;
             margin-bottom: 10px;
-            font-size: 16px;
-            color: #ffd700;
-            border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+            font-size: 14px;
+            color: #00ff41;
+            border-bottom: 1px solid rgba(0, 255, 65, 0.5);
             padding-bottom: 5px;
+            text-shadow: 0 0 3px #00ff41;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }}
         
         /* Custom marker styles */
         .galaxy-marker {{
-            background: radial-gradient(circle, #ff4444 30%, #ff6666 100%);
-            border: 3px solid rgba(255, 255, 255, 0.8);
+            background: radial-gradient(circle, #ff6600 30%, #ff8800 100%);
+            border: 2px solid #ffaa00;
             border-radius: 50%;
-            box-shadow: 0 0 20px rgba(255, 68, 68, 0.6);
-            animation: pulse 2s ease-in-out infinite alternate;
+            box-shadow: 0 0 15px rgba(255, 136, 0, 0.8);
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }}
+        
+        .galaxy-marker:after {{
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
         }}
         
         .cluster-marker {{
-            background: radial-gradient(circle, #ffd700 30%, #ffed4a 100%);
-            border: 2px solid rgba(255, 255, 255, 0.7);
+            background: radial-gradient(circle, #00ffff 30%, #00cccc 100%);
+            border: 2px solid #00eeee;
             border-radius: 50%;
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
+            width: 100%;
+            height: 100%;
         }}
         
         .solar-system-marker {{
-            background: radial-gradient(circle, #ffa500 30%, #ffb84d 100%);
-            border: 2px solid rgba(255, 255, 255, 0.6);
+            background: radial-gradient(circle, #ff00ff 30%, #cc00cc 100%);
+            border: 2px solid #ee00ee;
             border-radius: 50%;
-            box-shadow: 0 0 12px rgba(255, 165, 0, 0.4);
+            box-shadow: 0 0 12px rgba(255, 0, 255, 0.6);
+            width: 100%;
+            height: 100%;
         }}
         
         .star-marker {{
-            background: radial-gradient(circle, #87ceeb 30%, #b6e5ff 100%);
-            border: 1px solid rgba(255, 255, 255, 0.6);
+            background: radial-gradient(circle, #00ff41 30%, #00cc33 100%);
+            border: 1px solid #00ff66;
             border-radius: 50%;
-            box-shadow: 0 0 8px rgba(135, 206, 235, 0.4);
+            box-shadow: 0 0 8px rgba(0, 255, 65, 0.6);
+            width: 100%;
+            height: 100%;
             transition: transform 0.2s ease;
         }}
         
         .star-marker:hover {{
             transform: scale(1.5);
-            box-shadow: 0 0 15px rgba(135, 206, 235, 0.8);
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.9);
         }}
         
         .star-marker-optimized {{
@@ -280,58 +351,62 @@ def create_embedded_constellation_html():
         }}
         
         .galaxy-label, .cluster-label, .solar-system-label {{
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
+            background-color: rgba(0, 0, 0, 0.9);
+            font-family: 'Courier New', monospace;
             font-weight: bold;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 3px 8px;
+            border: 1px solid;
             white-space: nowrap;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
             transition: opacity 0.3s ease-in-out;
             text-align: center;
             transform: translateX(-50%);
             display: inline-block;
             cursor: pointer;
+            pointer-events: none;
+            z-index: 1000;
         }}
         
         .galaxy-label {{
-            font-size: 14px;
-            background: rgba(255, 68, 68, 0.9);
-            border-color: #ff4444;
+            font-size: 12px;
+            color: #ff6600;
+            border-color: #ff6600;
+            text-shadow: 0 0 5px #ff6600, 0 0 2px #000;
+            box-shadow: 0 0 8px rgba(255, 102, 0, 0.4);
         }}
         
         .cluster-label {{
-            font-size: 12px;
-            background: rgba(255, 215, 0, 0.9);
-            color: #000;
-            border-color: #ffd700;
+            font-size: 11px;
+            color: #00ffff;
+            border-color: #00ffff;
+            text-shadow: 0 0 5px #00ffff, 0 0 2px #000;
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
         }}
         
         .solar-system-label {{
             font-size: 10px;
-            background: rgba(255, 165, 0, 0.9);
-            color: #000;
-            border-color: #ffa500;
+            color: #ff00ff;
+            border-color: #ff00ff;
+            text-shadow: 0 0 5px #ff00ff, 0 0 2px #000;
+            box-shadow: 0 0 8px rgba(255, 0, 255, 0.4);
         }}
         
         /* Popup styling */
         .leaflet-popup-content-wrapper {{
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            border: 2px solid #ffd700;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            background: rgba(0, 40, 0, 0.95);
+            border: 1px solid #00ff41;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
         }}
         
         .leaflet-popup-content {{
-            color: white;
+            color: #00ff41;
             margin: 12px;
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 3px #00ff41;
         }}
         
         .leaflet-popup-tip {{
-            background: #1a1a2e;
-            border: 2px solid #ffd700;
+            background: rgba(0, 40, 0, 0.95);
+            border: 1px solid #00ff41;
         }}
         
         .goal-info {{
@@ -341,27 +416,33 @@ def create_embedded_constellation_html():
         
         .goal-info h3 {{
             margin: 0 0 12px 0;
-            color: #ffd700;
-            border-bottom: 2px solid #ffd700;
+            color: #00ff41;
+            border-bottom: 1px solid #00ff41;
             padding-bottom: 8px;
-            font-size: 18px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 3px #00ff41;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             display: flex;
             align-items: center;
         }}
         
         .goal-info h3::before {{
-            content: "⭐";
-            margin-right: 8px;
-            font-size: 20px;
+            content: "*";
+            margin-right: 6px;
+            font-size: 16px;
         }}
         
         .goal-detail {{
-            margin: 8px 0;
+            margin: 6px 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 4px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(0, 255, 65, 0.2);
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
         }}
         
         .goal-detail:last-child {{
@@ -369,8 +450,9 @@ def create_embedded_constellation_html():
         }}
         
         .goal-detail strong {{
-            color: #87ceeb;
-            font-weight: 600;
+            color: #00cccc;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
             min-width: 100px;
         }}
         
@@ -559,9 +641,9 @@ def create_embedded_constellation_html():
     </div>
     
     <div class="ui-panel search-panel">
-        <h3 style="margin: 0 0 10px 0; color: #ffd700; font-size: 16px;">🔍 Universal Search</h3>
+        <div class="panel-title">🔍 Universal Search</div>
         <div class="search-container">
-            <input type="text" id="player-search" class="search-input" placeholder="Search players, goalies, galaxies, clusters..." autocomplete="off">
+            <input type="text" id="player-search" class="search-input" placeholder="Search players..." autocomplete="off">
             <button id="search-clear" class="search-clear" style="display: none;">✕</button>
             <div id="search-suggestions" class="search-suggestions"></div>
         </div>
@@ -581,19 +663,19 @@ def create_embedded_constellation_html():
     <div class="ui-panel legend-panel">
         <div class="panel-title">Color Legend</div>
         <div class="legend-item">
-            <div class="legend-color" style="background: radial-gradient(circle, #ff4444 30%, #ff6666 100%);"></div>
+            <div class="legend-color" style="background: radial-gradient(circle, #ff6600 30%, #ff8800 100%);"></div>
             <span><strong>Galaxies</strong> - Spatial + shot type clusters</span>
         </div>
         <div class="legend-item">
-            <div class="legend-color" style="background: radial-gradient(circle, #ffd700 30%, #ffed4a 100%);"></div>
+            <div class="legend-color" style="background: radial-gradient(circle, #00ffff 30%, #00cccc 100%);"></div>
             <span><strong>Clusters</strong> - Game context groups</span>
         </div>
         <div class="legend-item">
-            <div class="legend-color" style="background: radial-gradient(circle, #ffa500 30%, #ffb84d 100%);"></div>
+            <div class="legend-color" style="background: radial-gradient(circle, #ff00ff 30%, #cc00cc 100%);"></div>
             <span><strong>Solar Systems</strong> - Goalie groupings</span>
         </div>
         <div class="legend-item">
-            <div class="legend-color" style="background: radial-gradient(circle, #87ceeb 30%, #b6e5ff 100%);"></div>
+            <div class="legend-color" style="background: radial-gradient(circle, #00ff41 30%, #00cc33 100%);"></div>
             <span><strong>Stars</strong> - Individual goals</span>
         </div>
     </div>
