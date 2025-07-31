@@ -569,6 +569,30 @@ def create_embedded_constellation_html():
             transform: translateY(-50%) !important;
         }}
         
+        /* Home button control styling */
+        .leaflet-control-home {{
+            margin-top: 5px !important;
+        }}
+        
+        .leaflet-control-home-button {{
+            background-color: #fff;
+            color: #333;
+            text-decoration: none;
+            font-size: 16px;
+            line-height: 26px;
+            display: block;
+            text-align: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 4px;
+            cursor: pointer;
+        }}
+        
+        .leaflet-control-home-button:hover {{
+            background-color: #f4f4f4;
+            color: #000;
+        }}
+        
         /* Context info bar at bottom */
         .context-bar {{
             position: fixed;
@@ -753,6 +777,33 @@ def create_embedded_constellation_html():
             zoomAnimation: true,
             fadeAnimation: true
         }});
+        
+        // Custom Home Button Control
+        L.Control.HomeButton = L.Control.extend({{
+            onAdd: function(map) {{
+                const container = L.DomUtil.create('div', 'leaflet-control-home leaflet-bar leaflet-control');
+                const button = L.DomUtil.create('a', 'leaflet-control-home-button', container);
+                
+                button.innerHTML = '🏠';
+                button.href = '#';
+                button.title = 'Return to center';
+                button.setAttribute('role', 'button');
+                button.setAttribute('aria-label', 'Return to center of map');
+                
+                L.DomEvent.on(button, 'click', function(e) {{
+                    L.DomEvent.stopPropagation(e);
+                    L.DomEvent.preventDefault(e);
+                    map.flyTo([0, 0], 0, {{
+                        duration: 1.5
+                    }});
+                }});
+                
+                return container;
+            }}
+        }});
+        
+        // Add the home button control to the map
+        map.addControl(new L.Control.HomeButton({{ position: 'topleft' }}));
         
         // URL parameter handling for sharing locations
         function parseUrlParams() {{
