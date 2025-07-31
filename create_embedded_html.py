@@ -264,7 +264,8 @@ def create_embedded_constellation_html():
         }}
         
         /* Mobile responsive layout */
-        @media screen and (max-width: 768px) {{
+        @media screen and (max-width: 768px), 
+               screen and (max-height: 768px) and (hover: none) and (pointer: coarse) {{
             .title-panel {{
                 display: none; /* Hidden by default on mobile */
             }}
@@ -3118,9 +3119,21 @@ def create_embedded_constellation_html():
             }}, 1000); // Wait for map to fully initialize
         }}
         
+        // Mobile device detection
+        function isMobileDevice() {{
+            // Check for mobile device using multiple indicators
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            const mobileUA = /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+            const touchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            const smallScreen = window.innerWidth <= 768 || window.innerHeight <= 768;
+            
+            // Consider it mobile if it's either a mobile UA or a small touch device
+            return mobileUA || (touchDevice && smallScreen);
+        }}
+        
         // Mobile UI functionality
         function initMobileUI() {{
-            if (window.innerWidth <= 768) {{
+            if (isMobileDevice()) {{
                 // Show mobile icons
                 document.querySelector('.mobile-info-icon').style.display = 'flex';
                 document.querySelector('.mobile-search-icon').style.display = 'flex';
@@ -3198,7 +3211,7 @@ def create_embedded_constellation_html():
         
         // Mobile panel collapse functionality  
         function initMobilePanelCollapse() {{
-            if (window.innerWidth <= 768) {{
+            if (isMobileDevice()) {{
                 const panelTitles = document.querySelectorAll('.panel-title');
                 panelTitles.forEach(title => {{
                     title.addEventListener('click', function() {{
