@@ -20,7 +20,7 @@ try:
     import anthropic
     # API key will be read from environment variable ANTHROPIC_API_KEY
     anthropic_client = anthropic.Anthropic()
-    AI_AVAILABLE = True
+    AI_AVAILABLE = False
     logger.info("Anthropic Claude API configured successfully")
 except ImportError:
     AI_AVAILABLE = False
@@ -585,15 +585,43 @@ def cluster_by_player_goalie_similarity(df_original, df_subset, cluster_labels):
             print(f"    Created miscellaneous solar system {solar_system_id} with {len(miscellaneous_combos)} non-matching combinations")
             solar_system_id += 1
         
-        # Assign solar system labels to goals based on their player-goalie combination
+        # Filter out solar systems with fewer than 3 goals and reassign them to miscellaneous
+        valid_combo_clusters = {}
+        small_systems_combos = []
+        next_solar_system_id = solar_system_id
+        
         for current_system_id, combos_in_system in combo_clusters.items():
+            # Count total goals in this solar system
+            total_goals = 0
+            for combo in combos_in_system:
+                combo_goals_mask = cluster_concat_names == combo
+                total_goals += combo_goals_mask.sum()
+            
+            # Only keep solar systems with 3 or more goals
+            if total_goals >= 3:
+                valid_combo_clusters[current_system_id] = combos_in_system
+            else:
+                small_systems_combos.extend(combos_in_system)
+                print(f"    Solar System {current_system_id} too small ({total_goals} goals), moving to miscellaneous")
+        
+        # Create a single miscellaneous system for all small systems
+        if small_systems_combos:
+            valid_combo_clusters[next_solar_system_id] = small_systems_combos
+            print(f"    Created miscellaneous solar system {next_solar_system_id} with {len(small_systems_combos)} combinations from small systems")
+            next_solar_system_id += 1
+        
+        # Assign solar system labels to goals based on their player-goalie combination
+        for current_system_id, combos_in_system in valid_combo_clusters.items():
             for combo in combos_in_system:
                 combo_goals_mask = cluster_concat_names == combo
                 combo_goal_indices = cluster_indices[combo_goals_mask]
                 solar_system_labels[combo_goal_indices] = current_system_id
         
-        print(f"    Created {len(combo_clusters)} solar systems")
-        for sid, combos in combo_clusters.items():
+        # Update the solar_system_id for next cluster
+        solar_system_id = next_solar_system_id
+        
+        print(f"    Created {len(valid_combo_clusters)} valid solar systems (minimum 3 goals each)")
+        for sid, combos in valid_combo_clusters.items():
             goal_count = np.sum(solar_system_labels == sid)
             if len(combos) > 5:
                 sample_combos = combos[:3] + ['...'] + combos[-2:] if len(combos) > 5 else combos
@@ -601,7 +629,55 @@ def cluster_by_player_goalie_similarity(df_original, df_subset, cluster_labels):
             else:
                 print(f"      Solar System {sid}: {len(combos)} combinations ({', '.join(combos)}), {goal_count} goals")
     
-    print(f"\nTotal solar systems created: {len(np.unique(solar_system_labels[solar_system_labels >= 0]))}")
+    # Final validation: ensure no solar system has fewer than 3 goals
+    print(f"\nFinal validation: checking all solar systems have minimum 3 goals...")
+    unique_systems = np.unique(solar_system_labels[solar_system_labels >= 0])
+    small_systems = []
+    valid_systems = []
+    
+    for system_id in unique_systems:
+        system_mask = solar_system_labels == system_id
+        goal_count = system_mask.sum()
+        if goal_count < 3:
+            small_systems.append(system_id)
+            print(f"  WARNING: Solar System {system_id} has only {goal_count} goals")
+        else:
+            valid_systems.append(system_id)
+    
+    # If we found small systems, consolidate them into one miscellaneous system
+    if small_systems:
+        print(f"  Consolidating {len(small_systems)} small systems into miscellaneous system...")
+        # Find the highest valid system ID and add 1 for the new miscellaneous system
+        all_system_ids = np.unique(solar_system_labels[solar_system_labels >= 0])
+        if len(all_system_ids) > 0:
+            misc_system_id = max(all_system_ids) + 1
+        else:
+            misc_system_id = 0
+        
+        # Reassign all small systems to the miscellaneous system
+        for small_system_id in small_systems:
+            small_system_mask = solar_system_labels == small_system_id
+            solar_system_labels[small_system_mask] = misc_system_id
+        
+        print(f"  Created miscellaneous system {misc_system_id} with {np.sum(solar_system_labels == misc_system_id)} goals")
+    
+    # Final verification
+    final_unique_systems = np.unique(solar_system_labels[solar_system_labels >= 0])
+    print(f"Final verification:")
+    all_valid = True
+    for system_id in final_unique_systems:
+        system_mask = solar_system_labels == system_id
+        goal_count = system_mask.sum()
+        if goal_count < 3:
+            print(f"  ERROR: Solar System {system_id} still has only {goal_count} goals")
+            all_valid = False
+    
+    if all_valid:
+        print("✓ All solar systems now have minimum 3 goals")
+    else:
+        print("✗ Some solar systems still have fewer than 3 goals")
+    
+    print(f"\nTotal solar systems created: {len(final_unique_systems)}")
     return solar_system_labels
 
 def cluster_by_goalie_similarity(df_original, df_subset, cluster_labels):
@@ -668,15 +744,43 @@ def cluster_by_goalie_similarity(df_original, df_subset, cluster_labels):
             print(f"    Created miscellaneous solar system {solar_system_id} with {len(miscellaneous_goalies)} non-matching goalies")
             solar_system_id += 1
         
-        # Assign solar system labels to goals based on their goalie
+        # Filter out solar systems with fewer than 3 goals and reassign them to miscellaneous
+        valid_goalie_clusters = {}
+        small_systems_goalies = []
+        next_solar_system_id = solar_system_id
+        
         for current_system_id, goalies_in_system in goalie_clusters.items():
+            # Count total goals in this solar system
+            total_goals = 0
+            for goalie in goalies_in_system:
+                goalie_goals_mask = cluster_goalies == goalie
+                total_goals += goalie_goals_mask.sum()
+            
+            # Only keep solar systems with 3 or more goals
+            if total_goals >= 3:
+                valid_goalie_clusters[current_system_id] = goalies_in_system
+            else:
+                small_systems_goalies.extend(goalies_in_system)
+                print(f"    Solar System {current_system_id} too small ({total_goals} goals), moving to miscellaneous")
+        
+        # Create a single miscellaneous system for all small systems
+        if small_systems_goalies:
+            valid_goalie_clusters[next_solar_system_id] = small_systems_goalies
+            print(f"    Created miscellaneous solar system {next_solar_system_id} with {len(small_systems_goalies)} goalies from small systems")
+            next_solar_system_id += 1
+        
+        # Assign solar system labels to goals based on their goalie
+        for current_system_id, goalies_in_system in valid_goalie_clusters.items():
             for goalie in goalies_in_system:
                 goalie_goals_mask = cluster_goalies == goalie
                 goalie_goal_indices = cluster_indices[goalie_goals_mask]
                 solar_system_labels[goalie_goal_indices] = current_system_id
         
-        print(f"    Created {len(goalie_clusters)} solar systems")
-        for sid, goalies in goalie_clusters.items():
+        # Update the solar_system_id for next cluster
+        solar_system_id = next_solar_system_id
+        
+        print(f"    Created {len(valid_goalie_clusters)} valid solar systems (minimum 3 goals each)")
+        for sid, goalies in valid_goalie_clusters.items():
             goal_count = np.sum(solar_system_labels == sid)
             if len(goalies) > 10:
                 print(f"      Solar System {sid}: {len(goalies)} goalies, {goal_count} goals")
@@ -750,15 +854,43 @@ def cluster_by_player_similarity(df_original, df_subset, cluster_labels):
             print(f"    Created miscellaneous solar system {solar_system_id} with {len(miscellaneous_players)} non-matching player")
             solar_system_id += 1
         
-        # Assign solar system labels to goals based on their goalie
+        # Filter out solar systems with fewer than 3 goals and reassign them to miscellaneous
+        valid_player_clusters = {}
+        small_systems_players = []
+        next_solar_system_id = solar_system_id
+        
         for current_system_id, players_in_system in player_clusters.items():
+            # Count total goals in this solar system
+            total_goals = 0
+            for player in players_in_system:
+                player_goals_mask = cluster_players == player
+                total_goals += player_goals_mask.sum()
+            
+            # Only keep solar systems with 3 or more goals
+            if total_goals >= 3:
+                valid_player_clusters[current_system_id] = players_in_system
+            else:
+                small_systems_players.extend(players_in_system)
+                print(f"    Solar System {current_system_id} too small ({total_goals} goals), moving to miscellaneous")
+        
+        # Create a single miscellaneous system for all small systems
+        if small_systems_players:
+            valid_player_clusters[next_solar_system_id] = small_systems_players
+            print(f"    Created miscellaneous solar system {next_solar_system_id} with {len(small_systems_players)} players from small systems")
+            next_solar_system_id += 1
+        
+        # Assign solar system labels to goals based on their player
+        for current_system_id, players_in_system in valid_player_clusters.items():
             for player in players_in_system:
                 player_goals_mask = cluster_players == player
                 player_goal_indices = cluster_indices[player_goals_mask]
                 solar_system_labels[player_goal_indices] = current_system_id
         
-        print(f"    Created {len(player_clusters)} solar systems")
-        for sid, players in player_clusters.items():
+        # Update the solar_system_id for next cluster
+        solar_system_id = next_solar_system_id
+        
+        print(f"    Created {len(valid_player_clusters)} valid solar systems (minimum 3 goals each)")
+        for sid, players in valid_player_clusters.items():
             goal_count = np.sum(solar_system_labels == sid)
             if len(players) > 10:
                 print(f"      Solar System {sid}: {len(players)} players, {goal_count} goals")

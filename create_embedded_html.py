@@ -294,29 +294,12 @@ def create_embedded_constellation_html():
                 padding: 12px;
             }}
             
-            .controls-panel {{
-                top: 200px; /* Below search */
-                left: 10px;
-                right: 10px;
-                max-width: none;
-                padding: 12px;
-            }}
-            
             .legend-panel {{
-                bottom: 100px; /* Above zoom panel */
+                bottom: 10px; /* Moved to bottom since zoom panel is hidden */
                 left: 10px;
                 right: 10px;
                 max-width: none;
                 padding: 12px;
-            }}
-            
-            .zoom-panel {{
-                bottom: 10px;
-                left: 10px;
-                right: 10px;
-                min-width: auto;
-                padding: 10px;
-                text-align: center;
             }}
             
             /* Make panels collapsible on mobile */
@@ -366,6 +349,12 @@ def create_embedded_constellation_html():
                 height: 32px !important;
                 line-height: 30px !important;
                 font-size: 18px !important;
+            }}
+            
+            /* Hide navigation guide and view status on mobile */
+            .controls-panel,
+            .zoom-panel {{
+                display: none !important;
             }}
         }}
         
@@ -2772,8 +2761,8 @@ def create_embedded_constellation_html():
                     }});
                 }});
                 
-                // Start with some panels collapsed to save space
-                const nonEssentialPanels = ['.controls-panel', '.legend-panel'];
+                // Start with some panels collapsed to save space (only legend panel since controls/zoom are hidden)
+                const nonEssentialPanels = ['.legend-panel'];
                 nonEssentialPanels.forEach(selector => {{
                     const panel = document.querySelector(selector);
                     if (panel) {{
