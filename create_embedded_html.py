@@ -263,63 +263,62 @@ def create_embedded_constellation_html():
             min-width: 150px;
         }}
         
+        /* Mobile icons - always available but controlled by JavaScript */
+        .mobile-info-icon {{
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            width: 40px;
+            height: 40px;
+            background: rgba(10, 15, 35, 0.95);
+            border: 1px solid rgba(100, 200, 255, 0.4);
+            border-radius: 50%;
+            display: none; /* Hidden by default, shown by JavaScript */
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #64c8ff;
+            z-index: 1002;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }}
+        
+        .mobile-info-icon:hover {{
+            background: rgba(100, 200, 255, 0.2);
+            transform: scale(1.1);
+        }}
+        
+        .mobile-search-icon {{
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background: rgba(10, 15, 35, 0.95);
+            border: 1px solid rgba(100, 200, 255, 0.4);
+            border-radius: 50%;
+            display: none; /* Hidden by default, shown by JavaScript */
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #64c8ff;
+            z-index: 1002;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }}
+        
+        .mobile-search-icon:hover {{
+            background: rgba(100, 200, 255, 0.2);
+            transform: scale(1.1);
+        }}
+        
         /* Mobile responsive layout */
         @media screen and (max-width: 768px), 
                screen and (max-height: 768px) and (hover: none) and (pointer: coarse) {{
             .title-panel {{
                 display: none; /* Hidden by default on mobile */
-            }}
-            
-            /* Mobile info icon for title */
-            .mobile-info-icon {{
-                position: fixed;
-                top: 15px;
-                left: 15px;
-                width: 40px;
-                height: 40px;
-                background: rgba(10, 15, 35, 0.95);
-                border: 1px solid rgba(100, 200, 255, 0.4);
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 18px;
-                color: #64c8ff;
-                z-index: 1002;
-                cursor: pointer;
-                backdrop-filter: blur(10px);
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-            }}
-            
-            .mobile-info-icon:hover {{
-                background: rgba(100, 200, 255, 0.2);
-                transform: scale(1.1);
-            }}
-            
-            /* Mobile search icon */
-            .mobile-search-icon {{
-                position: fixed;
-                top: 15px;
-                right: 15px;
-                width: 40px;
-                height: 40px;
-                background: rgba(10, 15, 35, 0.95);
-                border: 1px solid rgba(100, 200, 255, 0.4);
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 16px;
-                color: #64c8ff;
-                z-index: 1002;
-                cursor: pointer;
-                backdrop-filter: blur(10px);
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-            }}
-            
-            .mobile-search-icon:hover {{
-                background: rgba(100, 200, 255, 0.2);
-                transform: scale(1.1);
             }}
             
             .title-panel h1 {{
@@ -3124,7 +3123,9 @@ def create_embedded_constellation_html():
             const smallScreen = window.innerWidth <= 768 || window.innerHeight <= 768;
             
             // Consider it mobile if it's either a mobile UA or a small touch device
-            return mobileUA || (touchDevice && smallScreen);
+            const isMobile = mobileUA || (touchDevice && smallScreen);
+            console.log(`Mobile detection: UA=${{mobileUA}}, Touch=${{touchDevice}}, SmallScreen=${{smallScreen}}, Result=${{isMobile}}`);
+            return isMobile;
         }}
         
         // Mobile UI functionality
