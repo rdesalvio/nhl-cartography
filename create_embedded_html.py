@@ -3114,37 +3114,44 @@ def create_embedded_constellation_html():
             }}, 1000); // Wait for map to fully initialize
         }}
         
-        // Mobile device detection - simplified and more reliable
+        // Simple and reliable mobile detection
         function isMobileDevice() {{
-            // Primary detection: user agent
-            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-            const mobileUA = /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+            // Check user agent for mobile devices
+            const userAgent = navigator.userAgent;
+            const isMobileUA = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
             
-            // Secondary detection: screen size considering both orientations
-            const screenSize = Math.min(window.screen.width, window.screen.height);
-            const smallDevice = screenSize <= 768;
+            // Check if it's a touch device
+            const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
             
-            // Tertiary detection: touch capability
-            const touchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            // Force mobile for any touch device or known mobile UA
+            const isMobile = isMobileUA || isTouchDevice;
             
-            // Mobile if user agent indicates mobile OR it's a small touch device
-            const isMobile = mobileUA || (smallDevice && touchDevice);
-            
-            console.log(`Mobile detection - UA: ${{mobileUA}}, ScreenSize: ${{screenSize}}, Touch: ${{touchDevice}}, Result: ${{isMobile}}`);
-            console.log(`Current viewport: ${{window.innerWidth}}x${{window.innerHeight}}, Screen: ${{window.screen.width}}x${{window.screen.height}}`);
+            console.log(`Simple mobile detection: UA=${{isMobileUA}}, Touch=${{isTouchDevice}}, Final=${{isMobile}}`);
+            console.log(`UserAgent: ${{userAgent}}`);
             
             return isMobile;
         }}
         
         // Mobile UI functionality
         function initMobileUI() {{
+            const infoIcon = document.querySelector('.mobile-info-icon');
+            const searchIcon = document.querySelector('.mobile-search-icon');
+            
+            if (!infoIcon || !searchIcon) {{
+                console.log('Mobile icons not found in DOM');
+                return;
+            }}
+            
             if (isMobileDevice()) {{
+                console.log('Showing mobile icons');
                 // Show mobile icons
-                document.querySelector('.mobile-info-icon').style.display = 'flex';
-                document.querySelector('.mobile-search-icon').style.display = 'flex';
+                infoIcon.style.display = 'flex';
+                searchIcon.style.display = 'flex';
                 
-                // Mobile info icon click handler
-                document.querySelector('.mobile-info-icon').addEventListener('click', function() {{
+                // Mobile info icon click handler (only add if not already added)
+                if (!infoIcon.hasAttribute('data-listener-added')) {{
+                    infoIcon.setAttribute('data-listener-added', 'true');
+                    infoIcon.addEventListener('click', function() {{
                     const titlePanel = document.querySelector('.title-panel');
                     const isVisible = titlePanel.style.display === 'block';
                     
@@ -3187,10 +3194,13 @@ def create_embedded_constellation_html():
                             titlePanel.appendChild(closeBtn);
                         }}
                     }}
-                }});
+                    }});
+                }}
                 
-                // Mobile search icon click handler
-                document.querySelector('.mobile-search-icon').addEventListener('click', function() {{
+                // Mobile search icon click handler (only add if not already added)
+                if (!searchIcon.hasAttribute('data-listener-added')) {{
+                    searchIcon.setAttribute('data-listener-added', 'true');
+                    searchIcon.addEventListener('click', function() {{
                     const searchPanel = document.querySelector('.search-panel');
                     const isExpanded = searchPanel.classList.contains('mobile-expanded');
                     
@@ -3206,11 +3216,13 @@ def create_embedded_constellation_html():
                             if (searchInput) searchInput.focus();
                         }}, 100);
                     }}
-                }});
+                    }});
+                }}
             }} else {{
+                console.log('Hiding mobile icons (desktop detected)');
                 // Hide mobile icons on desktop
-                document.querySelector('.mobile-info-icon').style.display = 'none';
-                document.querySelector('.mobile-search-icon').style.display = 'none';
+                infoIcon.style.display = 'none';
+                searchIcon.style.display = 'none';
             }}
         }}
         
