@@ -847,9 +847,10 @@ def create_embedded_constellation_html():
 
     <div class="ui-panel title-panel">
         <h1>NHL Constellation Map</h1>
-        <p>🌌 Interactive visualization of NHL goal patterns</p>
-        <p>📊 {len(geojson_data['features'])} total celestial objects</p>
-        <p>🎯 16,221 goals from 2023+ seasons</p>
+        <p>Goals scored in the NHL from 2023+ are placed into different astrological objects using clustering techniques and then mapped into space
+         with graph layout algorithms. "Similar" goals appear near one another.</p>
+         <p>The search functionality lets you see at a 
+         glance where players exist in the galaxy, charting their own constellations.</p>
     </div>
     
     <div class="ui-panel search-panel">
@@ -884,7 +885,7 @@ def create_embedded_constellation_html():
         </div>
         <div class="legend-item">
             <div class="legend-color" style="background: radial-gradient(circle, #ff00ff 20%, #cc00ff 60%, #9900cc 100%); box-shadow: 0 0 10px rgba(204, 0, 255, 0.5);"></div>
-            <span><strong>Solar Systems</strong> - Goalie groupings</span>
+            <span><strong>Solar Systems</strong> - Goalscorer + Goaltender groups</span>
         </div>
         <div class="legend-item">
             <div class="legend-color" style="background: radial-gradient(circle, #00ff80 20%, #00ff41 60%, #00cc33 100%); box-shadow: 0 0 10px rgba(0, 255, 102, 0.5);"></div>
