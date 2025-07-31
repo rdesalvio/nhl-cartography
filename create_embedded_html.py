@@ -1948,6 +1948,8 @@ def create_embedded_constellation_html():
             
             if (clustersToAdd.length > 0) {{
                 requestAnimationFrame(addClusterBatch);
+                // Trigger collision detection after batch rendering completes
+                setTimeout(() => debouncedCollisionDetection(), 400);
             }}
             
             console.log(`Clusters: added ${{clustersToAdd.length}}, removed ${{clustersToRemove.length}}, total: ${{renderedClusters.size}}`);
@@ -2079,6 +2081,8 @@ def create_embedded_constellation_html():
             
             if (systemsToAdd.length > 0) {{
                 requestAnimationFrame(addSolarSystemBatch);
+                // Trigger collision detection after batch rendering completes
+                setTimeout(() => debouncedCollisionDetection(), 500);
             }}
             
             console.log(`Solar systems: added ${{systemsToAdd.length}}, removed ${{systemsToRemove.length}}, total: ${{renderedSolarSystems.size}}`);
@@ -2395,6 +2399,114 @@ def create_embedded_constellation_html():
             }}
         }}
         
+        // Label collision detection system
+        function detectLabelCollisions() {{
+            const currentZoom = map.getZoom();
+            
+            // Only apply collision detection at solar system zoom level (2.5 - 4.5)
+            if (currentZoom < 2.5 || currentZoom >= 4.5) {{
+                // At other zoom levels, just show all labels normally
+                [galaxyLabelLayer, clusterLabelLayer, solarSystemLabelLayer].forEach(layer => {{
+                    layer.eachLayer(label => {{
+                        const element = label.getElement();
+                        if (element) {{
+                            element.style.display = 'block';
+                        }}
+                    }});
+                }});
+                return;
+            }}
+            
+            const labels = [];
+            const minDistance = 60; // Minimum distance between labels in pixels
+            
+            // At solar system zoom level, only collect solar system labels for collision detection
+            [solarSystemLabelLayer].forEach((layer, layerIndex) => {{
+                layer.eachLayer(label => {{
+                    const element = label.getElement();
+                    if (element && element.style.display !== 'none') {{
+                        const bounds = element.getBoundingClientRect();
+                        const mapBounds = map.getContainer().getBoundingClientRect();
+                        
+                        // Calculate position relative to map
+                        const centerX = bounds.left + bounds.width/2 - mapBounds.left;
+                        const centerY = bounds.top + bounds.height/2 - mapBounds.top;
+                        
+                        // At solar system zoom level, all labels have same base priority
+                        let priority = 10;
+                        let size = 40;
+                        
+                        // Add distance from center as secondary priority
+                        const mapCenter = {{
+                            x: map.getContainer().clientWidth / 2,
+                            y: map.getContainer().clientHeight / 2
+                        }};
+                        const distanceFromCenter = Math.sqrt(
+                            Math.pow(centerX - mapCenter.x, 2) + 
+                            Math.pow(centerY - mapCenter.y, 2)
+                        );
+                        priority += Math.max(0, 50 - distanceFromCenter / 10);
+                        
+                        labels.push({{
+                            element,
+                            x: centerX,
+                            y: centerY,
+                            width: bounds.width || size,
+                            height: bounds.height || 20,
+                            priority,
+                            layerType: 2 // Solar system layer
+                        }});
+                    }}
+                }});
+            }});
+            
+            // Sort by priority (highest first)
+            labels.sort((a, b) => b.priority - a.priority);
+            
+            // Track occupied areas
+            const occupiedAreas = [];
+            
+            // Check each label for collisions
+            labels.forEach(label => {{
+                let hasCollision = false;
+                
+                for (const occupied of occupiedAreas) {{
+                    const dx = Math.abs(label.x - occupied.x);
+                    const dy = Math.abs(label.y - occupied.y);
+                    
+                    // Check if labels would overlap
+                    if (dx < (label.width + occupied.width) / 2 + minDistance / 2 &&
+                        dy < (label.height + occupied.height) / 2 + minDistance / 2) {{
+                        hasCollision = true;
+                        break;
+                    }}
+                }}
+                
+                if (hasCollision) {{
+                    // Hide this label due to collision
+                    label.element.style.display = 'none';
+                }} else {{
+                    // Show this label and mark area as occupied
+                    label.element.style.display = 'block';
+                    occupiedAreas.push({{
+                        x: label.x,
+                        y: label.y,
+                        width: label.width,
+                        height: label.height
+                    }});
+                }}
+            }});
+            
+            console.log(`Solar system label collision detection: ${{occupiedAreas.length}} labels visible, ${{labels.length - occupiedAreas.length}} hidden due to collisions`);
+        }}
+        
+        // Debounced collision detection
+        let collisionTimeout;
+        function debouncedCollisionDetection() {{
+            clearTimeout(collisionTimeout);
+            collisionTimeout = setTimeout(detectLabelCollisions, 200);
+        }}
+        
         // Improved debounced star rendering with throttling
         let renderTimeout;
         let isRendering = false;
@@ -2561,6 +2673,9 @@ def create_embedded_constellation_html():
                 
                 visibleLayers.push('Clusters');
                 objectCount += renderedClusters.size;
+                
+                // Trigger collision detection for cluster labels
+                setTimeout(() => debouncedCollisionDetection(), 300);
             }} else {{
                 if (map.hasLayer(clusterLayer)) {{
                     map.removeLayer(clusterLayer);
@@ -2592,6 +2707,11 @@ def create_embedded_constellation_html():
                         layer.getElement().style.display = showLabels ? 'block' : 'none';
                     }}
                 }});
+                
+                // Trigger collision detection after visibility changes
+                if (showLabels) {{
+                    debouncedCollisionDetection();
+                }}
             }} else if (zoom >= 4.5) {{
                 // Show individual stars, hide solar systems
                 if (!map.hasLayer(starLayer)) {{
@@ -2669,6 +2789,7 @@ def create_embedded_constellation_html():
             debouncedRenderStars();
             debouncedRenderSolarSystems(); // Add aggressive solar system culling
             debouncedRenderClusters(); // Add aggressive cluster culling
+            debouncedCollisionDetection(); // Detect and resolve label collisions
         }});
         
         // Search functionality
