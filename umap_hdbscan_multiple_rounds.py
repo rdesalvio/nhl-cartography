@@ -20,7 +20,7 @@ try:
     import anthropic
     # API key will be read from environment variable ANTHROPIC_API_KEY
     anthropic_client = anthropic.Anthropic()
-    AI_AVAILABLE = False
+    AI_AVAILABLE = True
     logger.info("Anthropic Claude API configured successfully")
 except ImportError:
     AI_AVAILABLE = False
@@ -109,11 +109,9 @@ def generate_cluster_name(level_name, cluster_goals, features_used):
         context_str = '; '.join(context_info)
         
         prompt = f"""You are tasked with creating a {level_name} name for a project which maps all of the goals scored in the NHL into a constellation map. The name should make sense based on the attributes of the goals contained in the cluster and should resemble names used in astronomy for our real universe.
-
-Some context for the goals in this grouping are: {context_str}.
-
-Please provide only the name (2-3 words maximum), no explanation. The name should be evocative of the goal characteristics and follow astronomical naming conventions. Try to avoid names like <Goalie Name> Nebula. If the best name appears to be that, use a different bit of context. Some names like that are ok.
-Only use the goalie name if the same goalie appears 3 or more times within the grouping"""
+Please provide only the name (2-3 words maximum), no explanation. The name should be evocative of the goal characteristics and follow astronomical naming conventions. Try to avoid names like <Goalie Name> <Astrological entity>. Some names like that are ok but if there is a way you can combine the name with an astrological word, do that without just concatenating.
+Only use the goalie name if the same goalie appears 3 or more times within the grouping.
+Some context for the goals in this grouping are: {context_str}."""
         
         # Generate name using Claude
         response = anthropic_client.messages.create(
