@@ -2575,7 +2575,7 @@ def create_embedded_constellation_html():
 </html>'''
     
     # Write the HTML file to root directory
-    output_path = 'nhl_constellation_map.html'
+    output_path = 'index.html'
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
     

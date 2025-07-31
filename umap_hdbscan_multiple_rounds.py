@@ -20,7 +20,7 @@ try:
     import anthropic
     # API key will be read from environment variable ANTHROPIC_API_KEY
     anthropic_client = anthropic.Anthropic()
-    AI_AVAILABLE = False
+    AI_AVAILABLE = True
     logger.info("Anthropic Claude API configured successfully")
 except ImportError:
     AI_AVAILABLE = False
@@ -88,7 +88,7 @@ def generate_cluster_name(level_name, cluster_goals, features_used):
             context_info.append(f"Common shot types: {', '.join([f'{shot} ({count})' for shot, count in shot_types.items()])}")
         
         if 'period' in features_used:
-            periods = cluster_goals['period'].value_counts().head(3)
+            periods = cluster_goals['period'].value_counts().head(5)
             context_info.append(f"Game periods: {', '.join([f'Period {period} ({count})' for period, count in periods.items()])}")
         
         if 'team_score' in features_used or 'opponent_score' in features_used:
@@ -97,12 +97,12 @@ def generate_cluster_name(level_name, cluster_goals, features_used):
             context_info.append(f"Average score context: {avg_team_score:.1f} - {avg_opp_score:.1f}")
         
         if 'player_name' in features_used:
-            top_players = cluster_goals['player_name'].value_counts().head(3)
+            top_players = cluster_goals['player_name'].value_counts().head(5)
             context_info.append(f"Top players: {', '.join([f'{player} ({count})' for player, count in top_players.items()])}")
         
         if 'goalie' in features_used or 'goalie_name' in features_used:
             goalie_col = 'goalie_name' if 'goalie_name' in cluster_goals.columns else 'goalie'
-            top_goalies = cluster_goals[goalie_col].value_counts().head(3)
+            top_goalies = cluster_goals[goalie_col].value_counts().head(5)
             context_info.append(f"Goalies faced: {', '.join([f'{goalie} ({count})' for goalie, count in top_goalies.items()])}")
         
         # Build the prompt
@@ -112,7 +112,8 @@ def generate_cluster_name(level_name, cluster_goals, features_used):
 
 Some context for the goals in this grouping are: {context_str}.
 
-Please provide only the name (2-3 words maximum), no explanation. The name should be evocative of the goal characteristics and follow astronomical naming conventions."""
+Please provide only the name (2-3 words maximum), no explanation. The name should be evocative of the goal characteristics and follow astronomical naming conventions. Try to avoid names like <Goalie Name> Nebula. If the best name appears to be that, use a different bit of context. Some names like that are ok.
+Only use the goalie name if the same goalie appears 3 or more times within the grouping"""
         
         # Generate name using Claude
         response = anthropic_client.messages.create(
@@ -515,6 +516,94 @@ def perform_cluster_clustering(df_subset, galaxy_labels):
     print(f"\nTotal clusters created: {len(np.unique(cluster_labels[cluster_labels >= 0]))}")
     return cluster_labels
 
+def cluster_by_player_goalie_similarity(df_original, df_subset, cluster_labels):
+    """Step 3: Within each cluster, create solar systems by concatenated player + goalie name similarity"""
+    print("Step 3: Creating solar systems by player + goalie name similarity within clusters...")
+    
+    solar_system_labels = np.full(len(df_subset), -1, dtype=int)
+    solar_system_id = 0
+    
+    unique_clusters = np.unique(cluster_labels[cluster_labels >= 0])
+    similarity_threshold = 0.4  # Reduced from 0.5 to 0.4
+    
+    for cluster_id in unique_clusters:
+        cluster_mask = cluster_labels == cluster_id
+        cluster_indices = np.where(cluster_mask)[0]
+        cluster_original_indices = df_subset.index[cluster_indices]
+        
+        print(f"\n  Processing Cluster {cluster_id} ({len(cluster_indices)} goals)...")
+        
+        # Create concatenated player + goalie names for this cluster
+        cluster_data = df_original.loc[cluster_original_indices]
+        cluster_player_names = cluster_data['player_name'].fillna('Unknown Player')
+        cluster_goalie_names = cluster_data['goalie_name'].fillna('Empty Net')
+        
+        # Create concatenated names: "PlayerName vs GoalieName"
+        cluster_concat_names = cluster_player_names + " vs " + cluster_goalie_names
+        unique_concat_names = cluster_concat_names.unique()
+        
+        print(f"    Found {len(unique_concat_names)} unique player-goalie combinations in cluster")
+        
+        # Create similarity matrix between concatenated names
+        similarity_matrix = np.zeros((len(unique_concat_names), len(unique_concat_names)))
+        
+        for i, combo1 in enumerate(unique_concat_names):
+            for j, combo2 in enumerate(unique_concat_names):
+                if i == j:
+                    similarity_matrix[i, j] = 1.0
+                else:
+                    similarity = calculate_name_similarity(combo1, combo2)
+                    similarity_matrix[i, j] = similarity
+        
+        # Group combinations by similarity threshold
+        combo_clusters = {}
+        clustered_combos = set()
+        miscellaneous_combos = []
+        
+        for i, combo in enumerate(unique_concat_names):
+            if combo in clustered_combos:
+                continue
+                
+            # Find similar combinations
+            similar_combos = []
+            for j, other_combo in enumerate(unique_concat_names):
+                if similarity_matrix[i, j] >= similarity_threshold:
+                    similar_combos.append(other_combo)
+                    clustered_combos.add(other_combo)
+            
+            # Only create solar system if we have more than just the single combination
+            if len(similar_combos) > 1:
+                combo_clusters[solar_system_id] = similar_combos
+                solar_system_id += 1
+            elif len(similar_combos) == 1:
+                miscellaneous_combos.append(similar_combos[0])
+                clustered_combos.add(similar_combos[0])
+        
+        # Create miscellaneous solar system for non-matching combinations
+        if miscellaneous_combos:
+            combo_clusters[solar_system_id] = miscellaneous_combos
+            print(f"    Created miscellaneous solar system {solar_system_id} with {len(miscellaneous_combos)} non-matching combinations")
+            solar_system_id += 1
+        
+        # Assign solar system labels to goals based on their player-goalie combination
+        for current_system_id, combos_in_system in combo_clusters.items():
+            for combo in combos_in_system:
+                combo_goals_mask = cluster_concat_names == combo
+                combo_goal_indices = cluster_indices[combo_goals_mask]
+                solar_system_labels[combo_goal_indices] = current_system_id
+        
+        print(f"    Created {len(combo_clusters)} solar systems")
+        for sid, combos in combo_clusters.items():
+            goal_count = np.sum(solar_system_labels == sid)
+            if len(combos) > 5:
+                sample_combos = combos[:3] + ['...'] + combos[-2:] if len(combos) > 5 else combos
+                print(f"      Solar System {sid}: {len(combos)} combinations ({', '.join(sample_combos)}), {goal_count} goals")
+            else:
+                print(f"      Solar System {sid}: {len(combos)} combinations ({', '.join(combos)}), {goal_count} goals")
+    
+    print(f"\nTotal solar systems created: {len(np.unique(solar_system_labels[solar_system_labels >= 0]))}")
+    return solar_system_labels
+
 def cluster_by_goalie_similarity(df_original, df_subset, cluster_labels):
     """Step 3: Within each cluster, create solar systems by goalie name similarity"""
     print("Step 3: Creating solar systems by goalie name similarity within clusters...")
@@ -796,7 +885,7 @@ def main():
     print("=== MULTIPLE ROUNDS UMAP + HDBSCAN CLUSTERING ===")
     print("Round 1 - Galaxies: shot_zone, shot_type")
     print("Round 2 - Clusters: period, period_time, score_diff, situation (within galaxies)")
-    print("Round 3 - Solar Systems: goalie name similarity (within clusters)")
+    print("Round 3 - Solar Systems: concatenated player + goalie name similarity (within clusters)")
     
     # Create output directory
     os.makedirs('sequential_clustering', exist_ok=True)
@@ -810,8 +899,9 @@ def main():
     # Step 2: Within each galaxy, create clusters using temporal/game state features
     cluster_labels = perform_cluster_clustering(df_subset, galaxy_labels)
     
-    # Step 3: Within each cluster, create solar systems by goalie name similarity
-    solar_system_labels = cluster_by_goalie_similarity(df_original, df_subset, cluster_labels)
+    # Step 3: Within each cluster, create solar systems by player + goalie name similarity  
+    solar_system_labels = cluster_by_player_goalie_similarity(df_original, df_subset, cluster_labels)
+    #solar_system_labels = cluster_by_goalie_similarity(df_original, df_subset, cluster_labels)
     #solar_system_labels = cluster_by_player_similarity(df_original, df_subset, cluster_labels)
     
     # Create goal hierarchy mapping with FIXED star assignments
@@ -834,7 +924,7 @@ def main():
     print(f"\n=== FINAL HIERARCHY ===")
     print(f"Galaxies (spatial/shot): {n_galaxies}")
     print(f"Clusters (temporal/game state): {n_clusters}")
-    print(f"Solar Systems (goalie similarity): {n_solar_systems}")
+    print(f"Solar Systems (player+goalie similarity): {n_solar_systems}")
     print(f"Stars: {len(mapping_df)}")
     
     # Show sample AI-generated names
