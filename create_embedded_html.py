@@ -266,12 +266,59 @@ def create_embedded_constellation_html():
         /* Mobile responsive layout */
         @media screen and (max-width: 768px) {{
             .title-panel {{
-                top: 10px;
-                left: 10px;
-                right: 10px;
-                max-width: none;
-                padding: 15px;
+                display: none; /* Hidden by default on mobile */
+            }}
+            
+            /* Mobile info icon for title */
+            .mobile-info-icon {{
                 position: fixed;
+                top: 15px;
+                left: 15px;
+                width: 40px;
+                height: 40px;
+                background: rgba(10, 15, 35, 0.95);
+                border: 1px solid rgba(100, 200, 255, 0.4);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 18px;
+                color: #64c8ff;
+                z-index: 1002;
+                cursor: pointer;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            }}
+            
+            .mobile-info-icon:hover {{
+                background: rgba(100, 200, 255, 0.2);
+                transform: scale(1.1);
+            }}
+            
+            /* Mobile search icon */
+            .mobile-search-icon {{
+                position: fixed;
+                top: 15px;
+                right: 15px;
+                width: 40px;
+                height: 40px;
+                background: rgba(10, 15, 35, 0.95);
+                border: 1px solid rgba(100, 200, 255, 0.4);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+                color: #64c8ff;
+                z-index: 1002;
+                cursor: pointer;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            }}
+            
+            .mobile-search-icon:hover {{
+                background: rgba(100, 200, 255, 0.2);
+                transform: scale(1.1);
             }}
             
             .title-panel h1 {{
@@ -285,13 +332,18 @@ def create_embedded_constellation_html():
             }}
             
             .search-panel {{
-                top: 120px; /* Below title */
+                display: none; /* Hidden by default on mobile */
+                top: 70px; /* Below mobile icons */
                 left: 10px;
                 right: 10px;
                 width: auto;
                 max-width: none;
                 transform: none;
                 padding: 12px;
+            }}
+            
+            .search-panel.mobile-expanded {{
+                display: block !important;
             }}
             
             .legend-panel {{
@@ -854,6 +906,10 @@ def create_embedded_constellation_html():
     </div>
     
     <div id="map"></div>
+    
+    <!-- Mobile Icons (only visible on mobile) -->
+    <div class="mobile-info-icon" style="display: none;">ℹ</div>
+    <div class="mobile-search-icon" style="display: none;">🔍</div>
     
     <!-- Leaflet JavaScript -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -2940,7 +2996,85 @@ def create_embedded_constellation_html():
             }}, 1000); // Wait for map to fully initialize
         }}
         
-        // Mobile panel collapse functionality
+        // Mobile UI functionality
+        function initMobileUI() {{
+            if (window.innerWidth <= 768) {{
+                // Show mobile icons
+                document.querySelector('.mobile-info-icon').style.display = 'flex';
+                document.querySelector('.mobile-search-icon').style.display = 'flex';
+                
+                // Mobile info icon click handler
+                document.querySelector('.mobile-info-icon').addEventListener('click', function() {{
+                    const titlePanel = document.querySelector('.title-panel');
+                    const isVisible = titlePanel.style.display === 'block';
+                    
+                    if (isVisible) {{
+                        titlePanel.style.display = 'none';
+                        this.style.background = 'rgba(10, 15, 35, 0.95)';
+                    }} else {{
+                        titlePanel.style.display = 'block';
+                        titlePanel.style.position = 'fixed';
+                        titlePanel.style.top = '70px';
+                        titlePanel.style.left = '10px';
+                        titlePanel.style.right = '10px';
+                        titlePanel.style.zIndex = '1003';
+                        this.style.background = 'rgba(100, 200, 255, 0.2)';
+                        
+                        // Add close button
+                        if (!titlePanel.querySelector('.mobile-close-btn')) {{
+                            const closeBtn = document.createElement('div');
+                            closeBtn.className = 'mobile-close-btn';
+                            closeBtn.innerHTML = '✕';
+                            closeBtn.style.cssText = `
+                                position: absolute;
+                                top: 10px;
+                                right: 10px;
+                                width: 24px;
+                                height: 24px;
+                                background: rgba(255, 0, 0, 0.2);
+                                border-radius: 50%;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                cursor: pointer;
+                                font-size: 12px;
+                                color: #ff6b6b;
+                            `;
+                            closeBtn.onclick = () => {{
+                                titlePanel.style.display = 'none';
+                                document.querySelector('.mobile-info-icon').style.background = 'rgba(10, 15, 35, 0.95)';
+                            }};
+                            titlePanel.appendChild(closeBtn);
+                        }}
+                    }}
+                }});
+                
+                // Mobile search icon click handler
+                document.querySelector('.mobile-search-icon').addEventListener('click', function() {{
+                    const searchPanel = document.querySelector('.search-panel');
+                    const isExpanded = searchPanel.classList.contains('mobile-expanded');
+                    
+                    if (isExpanded) {{
+                        searchPanel.classList.remove('mobile-expanded');
+                        this.style.background = 'rgba(10, 15, 35, 0.95)';
+                    }} else {{
+                        searchPanel.classList.add('mobile-expanded');
+                        this.style.background = 'rgba(100, 200, 255, 0.2)';
+                        // Focus the search input
+                        setTimeout(() => {{
+                            const searchInput = document.getElementById('player-search');
+                            if (searchInput) searchInput.focus();
+                        }}, 100);
+                    }}
+                }});
+            }} else {{
+                // Hide mobile icons on desktop
+                document.querySelector('.mobile-info-icon').style.display = 'none';
+                document.querySelector('.mobile-search-icon').style.display = 'none';
+            }}
+        }}
+        
+        // Mobile panel collapse functionality  
         function initMobilePanelCollapse() {{
             if (window.innerWidth <= 768) {{
                 const panelTitles = document.querySelectorAll('.panel-title');
@@ -2974,8 +3108,12 @@ def create_embedded_constellation_html():
         }}
         
         // Initialize mobile features
+        initMobileUI(); 
         initMobilePanelCollapse();
-        window.addEventListener('resize', initMobilePanelCollapse);
+        window.addEventListener('resize', () => {{
+            initMobileUI();
+            initMobilePanelCollapse();
+        }});
         
         console.log('NHL Constellation Map initialized successfully!');
         console.log('Zoom levels: -1 to 0 (Galaxies), 0.5+ (+ Clusters), 2.5-4.5 (+ Solar Systems), 4.5+ (+ Individual Goals)');
