@@ -348,11 +348,7 @@ def create_embedded_constellation_html():
             }}
             
             .legend-panel {{
-                bottom: 10px; /* Moved to bottom since zoom panel is hidden */
-                left: 10px;
-                right: 10px;
-                max-width: none;
-                padding: 12px;
+                display: none !important; /* Hide legend panel on mobile */
             }}
             
             /* Make panels collapsible on mobile */
