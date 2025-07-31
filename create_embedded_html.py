@@ -3114,17 +3114,25 @@ def create_embedded_constellation_html():
             }}, 1000); // Wait for map to fully initialize
         }}
         
-        // Mobile device detection
+        // Mobile device detection - simplified and more reliable
         function isMobileDevice() {{
-            // Check for mobile device using multiple indicators
+            // Primary detection: user agent
             const userAgent = navigator.userAgent || navigator.vendor || window.opera;
             const mobileUA = /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
-            const touchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-            const smallScreen = window.innerWidth <= 768 || window.innerHeight <= 768;
             
-            // Consider it mobile if it's either a mobile UA or a small touch device
-            const isMobile = mobileUA || (touchDevice && smallScreen);
-            console.log(`Mobile detection: UA=${{mobileUA}}, Touch=${{touchDevice}}, SmallScreen=${{smallScreen}}, Result=${{isMobile}}`);
+            // Secondary detection: screen size considering both orientations
+            const screenSize = Math.min(window.screen.width, window.screen.height);
+            const smallDevice = screenSize <= 768;
+            
+            // Tertiary detection: touch capability
+            const touchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            
+            // Mobile if user agent indicates mobile OR it's a small touch device
+            const isMobile = mobileUA || (smallDevice && touchDevice);
+            
+            console.log(`Mobile detection - UA: ${{mobileUA}}, ScreenSize: ${{screenSize}}, Touch: ${{touchDevice}}, Result: ${{isMobile}}`);
+            console.log(`Current viewport: ${{window.innerWidth}}x${{window.innerHeight}}, Screen: ${{window.screen.width}}x${{window.screen.height}}`);
+            
             return isMobile;
         }}
         
@@ -3242,9 +3250,27 @@ def create_embedded_constellation_html():
         // Initialize mobile features
         initMobileUI(); 
         initMobilePanelCollapse();
-        window.addEventListener('resize', () => {{
-            initMobileUI();
-            initMobilePanelCollapse();
+        
+        // Handle both resize and orientation changes with debouncing
+        let orientationTimeout;
+        function handleOrientationChange() {{
+            clearTimeout(orientationTimeout);
+            orientationTimeout = setTimeout(() => {{
+                console.log('Orientation/resize change detected, reinitializing mobile UI');
+                initMobileUI();
+                initMobilePanelCollapse();
+            }}, 100);
+        }}
+        
+        window.addEventListener('resize', handleOrientationChange);
+        window.addEventListener('orientationchange', handleOrientationChange);
+        
+        // Additional check after orientation change completes
+        window.addEventListener('orientationchange', () => {{
+            setTimeout(() => {{
+                console.log('Post-orientation change check');
+                initMobileUI();
+            }}, 500);
         }});
         
         console.log('NHL Constellation Map initialized successfully!');
