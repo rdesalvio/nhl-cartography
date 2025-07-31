@@ -263,6 +263,112 @@ def create_embedded_constellation_html():
             min-width: 150px;
         }}
         
+        /* Mobile responsive layout */
+        @media screen and (max-width: 768px) {{
+            .title-panel {{
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                max-width: none;
+                padding: 15px;
+                position: fixed;
+            }}
+            
+            .title-panel h1 {{
+                font-size: 20px;
+                margin-bottom: 8px;
+            }}
+            
+            .title-panel p {{
+                font-size: 12px;
+                margin: 4px 0;
+            }}
+            
+            .search-panel {{
+                top: 120px; /* Below title */
+                left: 10px;
+                right: 10px;
+                width: auto;
+                max-width: none;
+                transform: none;
+                padding: 12px;
+            }}
+            
+            .controls-panel {{
+                top: 200px; /* Below search */
+                left: 10px;
+                right: 10px;
+                max-width: none;
+                padding: 12px;
+            }}
+            
+            .legend-panel {{
+                bottom: 100px; /* Above zoom panel */
+                left: 10px;
+                right: 10px;
+                max-width: none;
+                padding: 12px;
+            }}
+            
+            .zoom-panel {{
+                bottom: 10px;
+                left: 10px;
+                right: 10px;
+                min-width: auto;
+                padding: 10px;
+                text-align: center;
+            }}
+            
+            /* Make panels collapsible on mobile */
+            .panel-title {{
+                cursor: pointer;
+                user-select: none;
+                padding: 8px 0;
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+                margin-bottom: 8px;
+            }}
+            
+            .panel-title:after {{
+                content: ' ▼';
+                font-size: 10px;
+                opacity: 0.7;
+                float: right;
+            }}
+            
+            /* Improve touch targets on mobile */
+            .search-input {{
+                font-size: 16px; /* Prevents zoom on iOS */
+                padding: 12px;
+            }}
+            
+            .search-clear {{
+                padding: 8px;
+                min-width: 40px;
+                min-height: 40px;
+            }}
+            
+            /* Hide less essential UI elements on small screens */
+            .title-panel p:nth-child(n+4) {{
+                display: none; /* Hide some description text */
+            }}
+            
+            /* Make zoom controls more touch-friendly */
+            .leaflet-control-zoom {{
+                transform: translateY(-50%) scale(1.2) !important;
+            }}
+            
+            .leaflet-control-home {{
+                margin-top: 8px !important;
+            }}
+            
+            .leaflet-control-home-button {{
+                width: 32px !important;
+                height: 32px !important;
+                line-height: 30px !important;
+                font-size: 18px !important;
+            }}
+        }}
+        
         .legend-item {{
             display: flex;
             align-items: center;
@@ -359,11 +465,21 @@ def create_embedded_constellation_html():
         
         .star-marker-optimized {{
             cursor: pointer;
-            transition: transform 0.1s ease;
+            /* Removed transition for better performance */
         }}
         
+        /* Optimized star dot styling */
+        .star-dot {{
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.6);
+        }}
+        
+        /* Apply lightweight hover effects for all devices */
         .star-marker-optimized:hover {{
-            transform: scale(1.3);
+            transform: scale(1.2); /* Reduced scale for better performance */
+            transition: transform 0.05s ease; /* Faster transition */
         }}
         
         @keyframes pulse {{
@@ -1868,8 +1984,11 @@ def create_embedded_constellation_html():
             if (map.getZoom() < 3.5) return; // Only render at high zoom
             
             const bounds = map.getBounds();
-            const bufferFactor = 0.5; // Render 50% beyond viewport for smooth panning
+            const bufferFactor = 0.3; // Reduced buffer for better performance
             const expandedBounds = bounds.pad(bufferFactor);
+            
+            // Performance-friendly maximum star limit for all devices
+            const MAX_STARS = /Mobi|Android/i.test(navigator.userAgent) ? 500 : 800; // Reduced desktop limit too
             
             // At high zoom levels (5+), also filter by which solar systems are in the viewport
             // This prevents showing stars from distant solar systems
@@ -1910,6 +2029,17 @@ def create_embedded_constellation_html():
                 }}
             }});
             
+            // Limit stars for performance (prioritize closer stars to center)
+            if (starsToAdd.length > MAX_STARS) {{
+                const center = map.getCenter();
+                starsToAdd.sort((a, b) => {{
+                    const distA = center.distanceTo(L.latLng(a.coord));
+                    const distB = center.distanceTo(L.latLng(b.coord));
+                    return distA - distB;
+                }});
+                starsToAdd.splice(MAX_STARS);
+            }}
+            
             // Remove stars in batches (fast)
             starsToRemove.forEach(index => {{
                 const marker = starMarkers.get(index);
@@ -1920,8 +2050,8 @@ def create_embedded_constellation_html():
                 }}
             }});
             
-            // Add stars in smaller batches to avoid blocking UI
-            const BATCH_SIZE = 100;
+            // Add stars in smaller batches to avoid blocking UI (reduced for mobile)
+            const BATCH_SIZE = 25; // Reduced from 100 for better mobile performance
             let currentBatch = 0;
             
             function addStarBatch() {{
@@ -1937,7 +2067,7 @@ def create_embedded_constellation_html():
                     const marker = L.marker(coord, {{
                         icon: L.divIcon({{
                             className: 'star-marker-optimized',
-                            html: `<div style="background: ${{clusterColor}}; width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.6);"></div>`,
+                            html: `<div class="star-dot" style="background-color: ${{clusterColor}};"></div>`,
                             iconSize: [12, 12],
                             iconAnchor: [6, 6]
                         }})
@@ -2039,11 +2169,17 @@ def create_embedded_constellation_html():
             }}
         }}
         
-        // Debounced star rendering to avoid excessive calls during fast panning/zooming
+        // Improved debounced star rendering with throttling
         let renderTimeout;
+        let isRendering = false;
         function debouncedRenderStars() {{
+            if (isRendering) return; // Skip if already rendering
             clearTimeout(renderTimeout);
-            renderTimeout = setTimeout(renderStarsInViewport, 100);
+            renderTimeout = setTimeout(() => {{
+                isRendering = true;
+                renderStarsInViewport();
+                setTimeout(() => {{ isRendering = false; }}, 50);
+            }}, 150); // Increased debounce for mobile
         }}
         
         // Set initial view to show all galaxies
@@ -2277,20 +2413,18 @@ def create_embedded_constellation_html():
             }});
         }}
         
-        // Update layer visibility on zoom changes
-        map.on('zoomend', updateLayerVisibility);
-        map.on('zoomend', cleanUpRogueMarkers);
+        // Consolidated event handling for better performance
+        map.on('zoomend', () => {{
+            updateLayerVisibility();
+            cleanUpRogueMarkers();
+            debouncedRenderStars();
+        }});
         
-        // Update context when user pans around
         map.on('moveend', () => {{
             const zoom = map.getZoom();
             updateContextAndLabels(zoom);
+            debouncedRenderStars();
         }});
-        
-        // Update star rendering on map moves for viewport culling
-        map.on('moveend', debouncedRenderStars);
-        map.on('zoomend', debouncedRenderStars);
-        map.on('zoom', updateLayerVisibility);
         
         // Search functionality
         let selectedPlayer = null;
@@ -2616,6 +2750,43 @@ def create_embedded_constellation_html():
                 navigateToLocation(urlLocation.name, urlLocation.type, [urlLocation.lat, urlLocation.lng], urlLocation.zoom);
             }}, 1000); // Wait for map to fully initialize
         }}
+        
+        // Mobile panel collapse functionality
+        function initMobilePanelCollapse() {{
+            if (window.innerWidth <= 768) {{
+                const panelTitles = document.querySelectorAll('.panel-title');
+                panelTitles.forEach(title => {{
+                    title.addEventListener('click', function() {{
+                        const panel = this.parentElement;
+                        const content = Array.from(panel.children).filter(child => child !== this);
+                        const isCollapsed = content[0].style.display === 'none';
+                        
+                        content.forEach(element => {{
+                            element.style.display = isCollapsed ? 'block' : 'none';
+                        }});
+                        
+                        // Update arrow indicator
+                        this.style.opacity = isCollapsed ? '1' : '0.7';
+                        const arrow = this.querySelector('::after') || this;
+                        arrow.textContent = arrow.textContent.replace(isCollapsed ? '▶' : '▼', isCollapsed ? '▼' : '▶');
+                    }});
+                }});
+                
+                // Start with some panels collapsed to save space
+                const nonEssentialPanels = ['.controls-panel', '.legend-panel'];
+                nonEssentialPanels.forEach(selector => {{
+                    const panel = document.querySelector(selector);
+                    if (panel) {{
+                        const title = panel.querySelector('.panel-title');
+                        if (title) title.click();
+                    }}
+                }});
+            }}
+        }}
+        
+        // Initialize mobile features
+        initMobilePanelCollapse();
+        window.addEventListener('resize', initMobilePanelCollapse);
         
         console.log('NHL Constellation Map initialized successfully!');
         console.log('Zoom levels: -1 to 0 (Galaxies), 0.5+ (+ Clusters), 2.5-4.5 (+ Solar Systems), 4.5+ (+ Individual Goals)');
