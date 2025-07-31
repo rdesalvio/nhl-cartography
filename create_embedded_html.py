@@ -1820,12 +1820,84 @@ def create_embedded_constellation_html():
             label.addTo(galaxyLabelLayer);
         }});
         
-        // Clear and add clusters (visible at medium zoom)
-        clusterLayer.clearLayers();
-        clusterLabelLayer.clearLayers();
+        // Cluster viewport rendering - track which ones are rendered
+        let renderedClusters = new Set();
+        let clusterMarkers = new Map();
         
-        clusters.forEach(cluster => {{
-            const coord = [cluster.geometry.coordinates[1], cluster.geometry.coordinates[0]];
+        function renderClustersInViewport() {{
+            if (map.getZoom() < 0.5) return; // Only render at appropriate zoom
+            
+            const bounds = map.getBounds();
+            const bufferFactor = 0.05; // Very tight buffer for aggressive culling
+            const expandedBounds = bounds.pad(bufferFactor);
+            
+            // Limit clusters to prevent performance issues
+            const MAX_CLUSTERS = /Mobi|Android/i.test(navigator.userAgent) ? 150 : 300;
+            
+            const clustersToAdd = [];
+            const clustersToRemove = [];
+            
+            clusters.forEach((cluster, index) => {{
+                const coord = [cluster.geometry.coordinates[1], cluster.geometry.coordinates[0]];
+                const isInView = expandedBounds.contains(coord);
+                
+                if (isInView && !renderedClusters.has(index)) {{
+                    clustersToAdd.push({{cluster, index, coord}});
+                }} else if (!isInView && renderedClusters.has(index)) {{
+                    clustersToRemove.push(index);
+                }}
+            }});
+            
+            // Remove out-of-view clusters
+            clustersToRemove.forEach(index => {{
+                const markers = clusterMarkers.get(index);
+                if (markers) {{
+                    clusterLayer.removeLayer(markers.marker);
+                    clusterLabelLayer.removeLayer(markers.label);
+                    clusterMarkers.delete(index);
+                    renderedClusters.delete(index);
+                }}
+            }});
+            
+            // Limit and prioritize clusters to add (closest to center first)
+            if (clustersToAdd.length > MAX_CLUSTERS) {{
+                const center = map.getCenter();
+                clustersToAdd.sort((a, b) => {{
+                    const distA = center.distanceTo(L.latLng(a.coord));
+                    const distB = center.distanceTo(L.latLng(b.coord));
+                    return distA - distB;
+                }});
+                clustersToAdd.splice(MAX_CLUSTERS);
+            }}
+            
+            // Add new clusters in batches
+            const BATCH_SIZE = 15;
+            let currentBatch = 0;
+            
+            function addClusterBatch() {{
+                const start = currentBatch * BATCH_SIZE;
+                const end = Math.min(start + BATCH_SIZE, clustersToAdd.length);
+                
+                for (let i = start; i < end; i++) {{
+                    const {{cluster, index, coord}} = clustersToAdd[i];
+                    createClusterMarkers(cluster, index, coord);
+                    renderedClusters.add(index);
+                }}
+                
+                currentBatch++;
+                if (end < clustersToAdd.length) {{
+                    requestAnimationFrame(addClusterBatch);
+                }}
+            }}
+            
+            if (clustersToAdd.length > 0) {{
+                requestAnimationFrame(addClusterBatch);
+            }}
+            
+            console.log(`Clusters: added ${{clustersToAdd.length}}, removed ${{clustersToRemove.length}}, total: ${{renderedClusters.size}}`);
+        }}
+        
+        function createClusterMarkers(cluster, clusterIndex, coord) {{
             
             // Get hierarchical stats for this cluster
             const clusterStats = getHierarchicalStats(cluster.properties.name, 'cluster');
@@ -1860,11 +1932,103 @@ def create_embedded_constellation_html():
             
             marker.addTo(clusterLayer);
             label.addTo(clusterLabelLayer);
-        }});
+            
+            // Store markers for tracking
+            clusterMarkers.set(clusterIndex, {{marker, label}});
+        }}
         
-        // Add solar systems (visible at medium zoom as larger circles)
-        solarSystems.forEach(solarSystem => {{
-            const coord = [solarSystem.geometry.coordinates[1], solarSystem.geometry.coordinates[0]];
+        // Debounced cluster rendering
+        let clusterRenderTimeout;
+        let isRenderingClusters = false;
+        
+        function debouncedRenderClusters() {{
+            if (isRenderingClusters) return;
+            clearTimeout(clusterRenderTimeout);
+            clusterRenderTimeout = setTimeout(() => {{
+                isRenderingClusters = true;
+                renderClustersInViewport();
+                setTimeout(() => {{ isRenderingClusters = false; }}, 50);
+            }}, 100);
+        }}
+        
+        // Solar system viewport rendering - track which ones are rendered
+        let renderedSolarSystems = new Set();
+        let solarSystemMarkers = new Map();
+        
+        function renderSolarSystemsInViewport() {{
+            if (map.getZoom() < 2.5) return; // Only render at appropriate zoom
+            
+            const bounds = map.getBounds();
+            const bufferFactor = 0.05; // Very tight buffer for aggressive culling
+            const expandedBounds = bounds.pad(bufferFactor);
+            
+            // Limit solar systems to prevent performance issues
+            const MAX_SOLAR_SYSTEMS = /Mobi|Android/i.test(navigator.userAgent) ? 200 : 400;
+            
+            const systemsToAdd = [];
+            const systemsToRemove = [];
+            
+            solarSystems.forEach((solarSystem, index) => {{
+                const coord = [solarSystem.geometry.coordinates[1], solarSystem.geometry.coordinates[0]];
+                const isInView = expandedBounds.contains(coord);
+                
+                if (isInView && !renderedSolarSystems.has(index)) {{
+                    systemsToAdd.push({{solarSystem, index, coord}});
+                }} else if (!isInView && renderedSolarSystems.has(index)) {{
+                    systemsToRemove.push(index);
+                }}
+            }});
+            
+            // Remove out-of-view systems
+            systemsToRemove.forEach(index => {{
+                const markers = solarSystemMarkers.get(index);
+                if (markers) {{
+                    solarSystemLayer.removeLayer(markers.marker);
+                    solarSystemLabelLayer.removeLayer(markers.label);
+                    solarSystemMarkers.delete(index);
+                    renderedSolarSystems.delete(index);
+                }}
+            }});
+            
+            // Limit and prioritize systems to add (closest to center first)
+            if (systemsToAdd.length > MAX_SOLAR_SYSTEMS) {{
+                const center = map.getCenter();
+                systemsToAdd.sort((a, b) => {{
+                    const distA = center.distanceTo(L.latLng(a.coord));
+                    const distB = center.distanceTo(L.latLng(b.coord));
+                    return distA - distB;
+                }});
+                systemsToAdd.splice(MAX_SOLAR_SYSTEMS);
+            }}
+            
+            // Add new systems in batches
+            const BATCH_SIZE = 20;
+            let currentBatch = 0;
+            
+            function addSolarSystemBatch() {{
+                const start = currentBatch * BATCH_SIZE;
+                const end = Math.min(start + BATCH_SIZE, systemsToAdd.length);
+                
+                for (let i = start; i < end; i++) {{
+                    const {{solarSystem, index, coord}} = systemsToAdd[i];
+                    createSolarSystemMarkers(solarSystem, index, coord);
+                    renderedSolarSystems.add(index);
+                }}
+                
+                currentBatch++;
+                if (end < systemsToAdd.length) {{
+                    requestAnimationFrame(addSolarSystemBatch);
+                }}
+            }}
+            
+            if (systemsToAdd.length > 0) {{
+                requestAnimationFrame(addSolarSystemBatch);
+            }}
+            
+            console.log(`Solar systems: added ${{systemsToAdd.length}}, removed ${{systemsToRemove.length}}, total: ${{renderedSolarSystems.size}}`);
+        }}
+        
+        function createSolarSystemMarkers(solarSystem, solarSystemIndex, coord) {{
             const goalCount = solarSystem.properties.goal_count || 1;
             
             // Calculate circle size based on number of goals (min 15, max 40)
@@ -1940,7 +2104,24 @@ def create_embedded_constellation_html():
             
             marker.addTo(solarSystemLayer);
             label.addTo(solarSystemLabelLayer);
-        }});
+            
+            // Store markers for tracking
+            solarSystemMarkers.set(solarSystemIndex, {{marker, label}});
+        }}
+        
+        // Debounced solar system rendering
+        let solarSystemRenderTimeout;
+        let isRenderingSolarSystems = false;
+        
+        function debouncedRenderSolarSystems() {{
+            if (isRenderingSolarSystems) return;
+            clearTimeout(solarSystemRenderTimeout);
+            solarSystemRenderTimeout = setTimeout(() => {{
+                isRenderingSolarSystems = true;
+                renderSolarSystemsInViewport();
+                setTimeout(() => {{ isRenderingSolarSystems = false; }}, 50);
+            }}, 100);
+        }}
         
         // Solar system color mapping function
         const solarSystemColors = new Map();
@@ -1973,11 +2154,11 @@ def create_embedded_constellation_html():
             if (map.getZoom() < 3.5) return; // Only render at high zoom
             
             const bounds = map.getBounds();
-            const bufferFactor = 0.3; // Reduced buffer for better performance
+            const bufferFactor = 0.1; // Much smaller buffer - aggressive culling for performance
             const expandedBounds = bounds.pad(bufferFactor);
             
-            // Performance-friendly maximum star limit for all devices
-            const MAX_STARS = /Mobi|Android/i.test(navigator.userAgent) ? 500 : 800; // Reduced desktop limit too
+            // Much lower star limits to prevent performance issues
+            const MAX_STARS = /Mobi|Android/i.test(navigator.userAgent) ? 300 : 500;
             
             // At high zoom levels (5+), also filter by which solar systems are in the viewport
             // This prevents showing stars from distant solar systems
@@ -2171,6 +2352,7 @@ def create_embedded_constellation_html():
             }}, 150); // Increased debounce for mobile
         }}
         
+        
         // Set initial view to show all galaxies
         const bounds = L.latLngBounds(galaxies.map(g => [g.geometry.coordinates[1], g.geometry.coordinates[0]]));
         map.fitBounds(bounds.pad(0.4));  // Increased padding for wider initial view
@@ -2317,8 +2499,12 @@ def create_embedded_constellation_html():
                     map.addLayer(clusterLayer);
                     map.addLayer(clusterLabelLayer);
                 }}
+                
+                // Trigger aggressive viewport-based cluster rendering
+                debouncedRenderClusters();
+                
                 visibleLayers.push('Clusters');
-                objectCount += clusters.length;
+                objectCount += renderedClusters.size;
             }} else {{
                 if (map.hasLayer(clusterLayer)) {{
                     map.removeLayer(clusterLayer);
@@ -2336,8 +2522,20 @@ def create_embedded_constellation_html():
                 if (map.hasLayer(starLayer)) {{
                     map.removeLayer(starLayer);
                 }}
+                
+                // Trigger aggressive viewport-based solar system rendering
+                debouncedRenderSolarSystems();
+                
                 visibleLayers.push('Solar Systems');
-                objectCount += solarSystems.length;
+                objectCount += renderedSolarSystems.size;
+                
+                // Control label visibility based on zoom level
+                const showLabels = zoom >= 4.0; // Only show labels at zoom 4.0+
+                solarSystemLabelLayer.eachLayer(layer => {{
+                    if (layer.getElement()) {{
+                        layer.getElement().style.display = showLabels ? 'block' : 'none';
+                    }}
+                }});
             }} else if (zoom >= 4.5) {{
                 // Show individual stars, hide solar systems
                 if (!map.hasLayer(starLayer)) {{
@@ -2413,6 +2611,8 @@ def create_embedded_constellation_html():
             const zoom = map.getZoom();
             updateContextAndLabels(zoom);
             debouncedRenderStars();
+            debouncedRenderSolarSystems(); // Add aggressive solar system culling
+            debouncedRenderClusters(); // Add aggressive cluster culling
         }});
         
         // Search functionality
