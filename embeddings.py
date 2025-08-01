@@ -12,7 +12,7 @@ import os
 class EmbeddingWrapper:
     def __init__(self, embedding_model="models/embedding-001"):
         self.embedding_model = embedding_model
-        self.client = genai.Client(api_key="AIzaSyAmtDYAEyzOzB40VHR76sGEFMrH2h5GLQ4")
+        self.client = genai.Client(api_key=os.environ['GOOGLE_API_KEY'])
         
 
     def get_embedding(self, text: list[str]) -> types.EmbedContentResponse:

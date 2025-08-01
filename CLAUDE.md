@@ -54,13 +54,9 @@ A UI is built with the create_embedded_html.py script. It generates an HTML file
 - Zoom in and out to get dynamically rendered stars
 - View video and information about individual goals
 - Search by Player Name and see all of the connections the player is in within the viewport
+- Share locations with others
+- Search by any level of constellation
 
 
 ## Next Steps for Development
-Next steps would be refine the UI, clean up any bugs, and look for new ideas. Improving performance and simplifying code is always a priority. 
-
-Eventually, I wil rename the clusters and potentially revisit some of the clustering but I am pretty happy with that for now.
-
-I am on the lookout for any easy to implement new ideas for the UI to make it better and make it more fun to interact with the data. Some off the cuff ideas
-- How the galaxies are rendered at the most zoomed out view are pretty boring as they are just red rectangles. It might be cooler if there was a better way to show them
-- I want to create a copy/paste system which lets people share a cool solar system that they have found. It should let you copy the name as a link to their clipboard and share it so that if someone also wanted to look at that, they could just copy the link and it would take them right there to the proper location and zoom level. Another way we could lean into this is to allow galaxy, clusters, and systems to be searched by name in the search bar. If you click on one of those, it should take you to the proper zoom level and location on the map. 
+None for now

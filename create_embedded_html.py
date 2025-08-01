@@ -263,15 +263,161 @@ def create_embedded_constellation_html():
             min-width: 150px;
         }}
         
+        /* Mobile icons - always available but controlled by JavaScript */
+        .mobile-info-icon {{
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            width: 40px;
+            height: 40px;
+            background: rgba(10, 15, 35, 0.95);
+            border: 1px solid rgba(100, 200, 255, 0.4);
+            border-radius: 50%;
+            display: none; /* Hidden by default, shown by JavaScript */
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #64c8ff;
+            z-index: 1002;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }}
+        
+        .mobile-info-icon:hover {{
+            background: rgba(100, 200, 255, 0.2);
+            transform: scale(1.1);
+        }}
+        
+        .mobile-search-icon {{
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background: rgba(10, 15, 35, 0.95);
+            border: 1px solid rgba(100, 200, 255, 0.4);
+            border-radius: 50%;
+            display: none; /* Hidden by default, shown by JavaScript */
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #64c8ff;
+            z-index: 1002;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }}
+        
+        .mobile-search-icon:hover {{
+            background: rgba(100, 200, 255, 0.2);
+            transform: scale(1.1);
+        }}
+        
+        /* Welcome Information Modal */
+        .welcome-modal {{
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(10px);
+        }}
+        
+        .welcome-content {{
+            background: linear-gradient(135deg, rgba(10, 15, 35, 0.95) 0%, rgba(15, 20, 45, 0.95) 100%);
+            border: 2px solid rgba(100, 200, 255, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 600px;
+            max-height: 80vh;
+            margin: 20px;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+            
+            /* Hide scrollbar while keeping scroll functionality */
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* Internet Explorer/Edge */
+        }}
+        
+        /* Hide scrollbar for WebKit browsers (Chrome, Safari) */
+        .welcome-content::-webkit-scrollbar {{
+            display: none;
+        }}
+        
+        .welcome-close {{
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 0, 0, 0.3);
+            border: 2px solid rgba(255, 102, 102, 0.6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #ff6666;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 2001;
+            touch-action: manipulation;
+        }}
+        
+        .welcome-close:hover {{
+            background: rgba(255, 0, 0, 0.4);
+            transform: scale(1.1);
+        }}
+        
+        .welcome-title {{
+            color: #64c8ff;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+        }}
+        
+        .welcome-text {{
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+            margin-bottom: 16px;
+            font-size: 15px;
+        }}
+        
+        .welcome-text:last-child {{
+            margin-bottom: 0;
+        }}
+        
+        /* Desktop info button in search panel */
+        .desktop-info-btn {{
+            float: right;
+            cursor: pointer;
+            opacity: 0.7;
+            font-size: 14px;
+            padding: 2px 6px;
+            border-radius: 50%;
+            background: rgba(100, 200, 255, 0.2);
+            transition: all 0.3s ease;
+        }}
+        
+        .desktop-info-btn:hover {{
+            opacity: 1;
+            background: rgba(100, 200, 255, 0.4);
+            transform: scale(1.1);
+        }}
+        
         /* Mobile responsive layout */
-        @media screen and (max-width: 768px) {{
+        @media screen and (max-width: 768px), 
+               screen and (max-height: 768px) and (hover: none) and (pointer: coarse) {{
             .title-panel {{
-                top: 10px;
-                left: 10px;
-                right: 10px;
-                max-width: none;
-                padding: 15px;
-                position: fixed;
+                display: none; /* Hidden by default on mobile */
             }}
             
             .title-panel h1 {{
@@ -285,7 +431,8 @@ def create_embedded_constellation_html():
             }}
             
             .search-panel {{
-                top: 120px; /* Below title */
+                display: none; /* Hidden by default on mobile */
+                top: 70px; /* Below mobile icons */
                 left: 10px;
                 right: 10px;
                 width: auto;
@@ -294,29 +441,12 @@ def create_embedded_constellation_html():
                 padding: 12px;
             }}
             
-            .controls-panel {{
-                top: 200px; /* Below search */
-                left: 10px;
-                right: 10px;
-                max-width: none;
-                padding: 12px;
+            .search-panel.mobile-expanded {{
+                display: block !important;
             }}
             
             .legend-panel {{
-                bottom: 100px; /* Above zoom panel */
-                left: 10px;
-                right: 10px;
-                max-width: none;
-                padding: 12px;
-            }}
-            
-            .zoom-panel {{
-                bottom: 10px;
-                left: 10px;
-                right: 10px;
-                min-width: auto;
-                padding: 10px;
-                text-align: center;
+                display: none !important; /* Hide legend panel on mobile */
             }}
             
             /* Make panels collapsible on mobile */
@@ -366,6 +496,60 @@ def create_embedded_constellation_html():
                 height: 32px !important;
                 line-height: 30px !important;
                 font-size: 18px !important;
+            }}
+            
+            /* Hide navigation guide and view status on mobile */
+            .controls-panel,
+            .zoom-panel {{
+                display: none !important;
+            }}
+            
+            /* Welcome modal adjustments for mobile */
+            .welcome-modal {{
+                padding: 0; /* Remove padding that was causing offset */
+                align-items: center; /* Center horizontally */
+                justify-content: center; /* Center both ways */
+                padding-top: 20px; /* Only top spacing */
+                padding-bottom: 20px; /* Bottom spacing for browser UI */
+            }}
+            
+            .welcome-content {{
+                margin: 15px; /* Margin instead of modal padding for proper centering */
+                padding: 50px 20px 60px 20px; /* Large top padding for close button, extra bottom for browser UI */
+                max-height: 70vh; /* Further reduced height */
+                font-size: 14px;
+                width: calc(100vw - 30px); /* Full viewport width minus margins */
+                max-width: calc(100vw - 30px); /* Ensure it doesn't exceed viewport */
+                box-sizing: border-box; /* Include padding in width calculation */
+            }}
+            
+            .welcome-title {{
+                font-size: 18px;
+                margin-bottom: 16px;
+                margin-top: 0; /* Remove top margin since we have padding */
+                line-height: 1.3;
+                text-align: center;
+            }}
+            
+            .welcome-text {{
+                font-size: 13px;
+                margin-bottom: 12px;
+                line-height: 1.4;
+            }}
+            
+            /* Make close button smaller and better positioned on mobile */
+            .welcome-close {{
+                width: 30px;
+                height: 30px;
+                top: 8px;
+                right: 8px;
+                font-size: 14px;
+                font-weight: bold;
+            }}
+            
+            /* Hide desktop info button on mobile */
+            .desktop-info-btn {{
+                display: none;
             }}
         }}
         
@@ -804,15 +988,11 @@ def create_embedded_constellation_html():
         <div>Loading NHL Constellation Map...</div>
     </div>
 
-    <div class="ui-panel title-panel">
-        <h1>NHL Constellation Map</h1>
-        <p>🌌 Interactive visualization of NHL goal patterns</p>
-        <p>📊 {len(geojson_data['features'])} total celestial objects</p>
-        <p>🎯 16,221 goals from 2023+ seasons</p>
-    </div>
-    
     <div class="ui-panel search-panel">
-        <div class="panel-title">🔍 Universal Search</div>
+        <div class="panel-title">
+            🔍 Universal Search
+            <span class="desktop-info-btn" onclick="showWelcomeModal()" title="Show welcome information">ℹ️</span>
+        </div>
         <div class="search-container">
             <input type="text" id="player-search" class="search-input" placeholder="Search players..." autocomplete="off">
             <button id="search-clear" class="search-clear" style="display: none;">✕</button>
@@ -843,11 +1023,7 @@ def create_embedded_constellation_html():
         </div>
         <div class="legend-item">
             <div class="legend-color" style="background: radial-gradient(circle, #ff00ff 20%, #cc00ff 60%, #9900cc 100%); box-shadow: 0 0 10px rgba(204, 0, 255, 0.5);"></div>
-            <span><strong>Solar Systems</strong> - Goalie groupings</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: radial-gradient(circle, #00ff80 20%, #00ff41 60%, #00cc33 100%); box-shadow: 0 0 10px rgba(0, 255, 102, 0.5);"></div>
-            <span><strong>Stars</strong> - Individual goals</span>
+            <span><strong>Solar Systems</strong> - Goalscorer + Goaltender groups</span>
         </div>
     </div>
     
@@ -866,6 +1042,64 @@ def create_embedded_constellation_html():
     
     <div id="map"></div>
     
+    <!-- Mobile Icons (only visible on mobile) -->
+    <div class="mobile-info-icon" style="display: none;">ℹ</div>
+    <div class="mobile-search-icon" style="display: none;">🔍</div>
+    
+    <!-- Welcome Information Modal -->
+    <div id="welcome-modal" class="welcome-modal">
+        <div class="welcome-content">
+            <div class="welcome-close" onclick="closeWelcomeModal()">✕</div>
+            <div class="welcome-title">🌌 Welcome to the NHL Star Chart</div>
+            <div class="welcome-text">
+                Explore NHL goal data as never before! This interactive visualization maps over 16,000 goals from the 2023 NHL season+ into cosmic formations - galaxies, clusters, solar systems, and individual stars.
+            </div>
+            <div class="welcome-text">
+                <strong>⭐ What You'll Find:</strong> Goals are clustered by location on ice, shot type, game context, and player similarity. Similar goals form "galaxies" - you might find all the goals from a specific area of the rink, or goals scored in similar game situations grouped together like stellar formations. Finally, solar systems portray goals which share similar goalscorer and goaltender names. The names of celestial features are determined by the goals they contain.
+            </div>
+            <div class="welcome-text">
+                <strong>🔍 Interactive Features:</strong> Click on any object to see information about goals it contains. The stars themselves have detailed information about the goal, including video highlights when available. Use the search feature to find specific players and see all their connected goals highlighted with golden lines across the map to form constellations. Every level contains a share button so if you find something cool, hit the share button and the link will take someone directly to that location on the star chart.
+            </div>
+            <div class="welcome-text">
+                <strong>🔍 How to Interpret:</strong> Think of this map as a star chart where every NHL goal becomes a star, and similar goals
+                naturally cluster together to form cosmic neighborhoods.
+
+                <p><strong>What Makes Goals Similar?</strong><br>
+                Goals are grouped based on hockey situations:
+                <ul>
+                    <li><strong>Where the shot came from</strong> - Goals from the slot vs. the point vs. faceoff circles</li>
+                    <li><strong>How it was scored</strong> - Wrist shots, slap shots, deflections, etc.</li>
+                    <li><strong>Game situation</strong> - Power play, penalty kill, even strength, empty net</li>
+                    <li><strong>When it happened</strong> - Early in periods vs. late, different periods</li>
+                    <li><strong>Who scored and who got beat</strong> - Similar players tend to score similar goals</li>
+                </ul>
+                </p>
+
+                <p><strong>Reading the Map:</strong><br>
+                The map has three levels, just like looking at the night sky with different telescopes:</p>
+
+                <ul>
+                    <li><strong>🌌 Galaxies (Red)</strong> - Broad categories like "slot shots at even strength" or "point shots on the power
+                play"</li>
+                    <li><strong>⭐ Clusters (Blue)</strong> - More specific situations like "first goals in the game scored in the first" or "goals in a 1-goal game scored in the 3rd period"</li>
+                    <li><strong>🪐 Solar Systems (Purple)</strong> - Very specific scenarios, often involving the same goalie getting beat in
+                similar ways</li>
+                </ul>
+
+                <p><strong>What This Tells You:</strong><br>
+                • <em>Large formations</em> = Common NHL scoring situations<br>
+                • <em>Pattern formation</em> = Some goalies get beat in similar ways which can be seen at solar system</p>
+                • <em>Isolated stars</em> = Rare or spectacular goals</p>
+
+                <p>Use the search to find your favorite player and see their "constellation" - the pattern of how and where they typically
+                score!</p>
+            </div>
+            <div class="welcome-text">
+                <strong>📚 About:</strong> This project is inspired by the fabulous <a href="https://anvaka.github.io/map-of-github">Map Of Github</a>. The code to generate this project can be found on it's github repository <a href="https://github.com/rdesalvio/nhl-cartography">nhl-cartography</a>
+            </div>
+        </div>
+    </div>
+
     <!-- Leaflet JavaScript -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
@@ -875,6 +1109,53 @@ def create_embedded_constellation_html():
         
         // Hide loading screen once data is loaded
         document.getElementById('loading').style.display = 'none';
+        
+        // Welcome modal functions - simplified and reliable
+        window.closeWelcomeModal = function() {{
+            console.log('Attempting to close welcome modal');
+            const modal = document.getElementById('welcome-modal');
+            if (modal) {{
+                modal.style.display = 'none';
+                localStorage.setItem('nhl-constellation-welcomed', 'true');
+                console.log('Welcome modal closed successfully');
+            }} else {{
+                console.log('Modal element not found');
+            }}
+        }}
+        
+        function showWelcomeModal() {{
+            const modal = document.getElementById('welcome-modal');
+            if (modal) {{
+                modal.style.display = 'flex';
+                console.log('Welcome modal shown');
+            }}
+        }}
+        
+        // Set up modal event listeners after DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {{
+            const modal = document.getElementById('welcome-modal');
+            const closeBtn = document.querySelector('.welcome-close');
+            
+            if (modal && closeBtn) {{
+                // Close button click
+                closeBtn.addEventListener('click', closeWelcomeModal);
+                closeBtn.addEventListener('touchstart', function(e) {{
+                    e.preventDefault();
+                    closeWelcomeModal();
+                }});
+                
+                // Click outside to close
+                modal.addEventListener('click', function(e) {{
+                    if (e.target === modal) {{
+                        closeWelcomeModal();
+                    }}
+                }});
+                
+                console.log('Modal event listeners attached');
+            }}
+        }});
+        
+        
         
         // Custom CRS for our coordinate system
         const customCRS = L.extend({{}}, L.CRS.Simple, {{
@@ -1831,12 +2112,86 @@ def create_embedded_constellation_html():
             label.addTo(galaxyLabelLayer);
         }});
         
-        // Clear and add clusters (visible at medium zoom)
-        clusterLayer.clearLayers();
-        clusterLabelLayer.clearLayers();
+        // Cluster viewport rendering - track which ones are rendered
+        let renderedClusters = new Set();
+        let clusterMarkers = new Map();
         
-        clusters.forEach(cluster => {{
-            const coord = [cluster.geometry.coordinates[1], cluster.geometry.coordinates[0]];
+        function renderClustersInViewport() {{
+            if (map.getZoom() < 0.5) return; // Only render at appropriate zoom
+            
+            const bounds = map.getBounds();
+            const bufferFactor = 0.05; // Very tight buffer for aggressive culling
+            const expandedBounds = bounds.pad(bufferFactor);
+            
+            // Limit clusters to prevent performance issues
+            const MAX_CLUSTERS = /Mobi|Android/i.test(navigator.userAgent) ? 150 : 300;
+            
+            const clustersToAdd = [];
+            const clustersToRemove = [];
+            
+            clusters.forEach((cluster, index) => {{
+                const coord = [cluster.geometry.coordinates[1], cluster.geometry.coordinates[0]];
+                const isInView = expandedBounds.contains(coord);
+                
+                if (isInView && !renderedClusters.has(index)) {{
+                    clustersToAdd.push({{cluster, index, coord}});
+                }} else if (!isInView && renderedClusters.has(index)) {{
+                    clustersToRemove.push(index);
+                }}
+            }});
+            
+            // Remove out-of-view clusters
+            clustersToRemove.forEach(index => {{
+                const markers = clusterMarkers.get(index);
+                if (markers) {{
+                    clusterLayer.removeLayer(markers.marker);
+                    clusterLabelLayer.removeLayer(markers.label);
+                    clusterMarkers.delete(index);
+                    renderedClusters.delete(index);
+                }}
+            }});
+            
+            // Limit and prioritize clusters to add (closest to center first)
+            if (clustersToAdd.length > MAX_CLUSTERS) {{
+                const center = map.getCenter();
+                clustersToAdd.sort((a, b) => {{
+                    const distA = center.distanceTo(L.latLng(a.coord));
+                    const distB = center.distanceTo(L.latLng(b.coord));
+                    return distA - distB;
+                }});
+                clustersToAdd.splice(MAX_CLUSTERS);
+            }}
+            
+            // Add new clusters in batches
+            const BATCH_SIZE = 15;
+            let currentBatch = 0;
+            
+            function addClusterBatch() {{
+                const start = currentBatch * BATCH_SIZE;
+                const end = Math.min(start + BATCH_SIZE, clustersToAdd.length);
+                
+                for (let i = start; i < end; i++) {{
+                    const {{cluster, index, coord}} = clustersToAdd[i];
+                    createClusterMarkers(cluster, index, coord);
+                    renderedClusters.add(index);
+                }}
+                
+                currentBatch++;
+                if (end < clustersToAdd.length) {{
+                    requestAnimationFrame(addClusterBatch);
+                }}
+            }}
+            
+            if (clustersToAdd.length > 0) {{
+                requestAnimationFrame(addClusterBatch);
+                // Trigger collision detection after batch rendering completes
+                setTimeout(() => debouncedCollisionDetection(), 400);
+            }}
+            
+            console.log(`Clusters: added ${{clustersToAdd.length}}, removed ${{clustersToRemove.length}}, total: ${{renderedClusters.size}}`);
+        }}
+        
+        function createClusterMarkers(cluster, clusterIndex, coord) {{
             
             // Get hierarchical stats for this cluster
             const clusterStats = getHierarchicalStats(cluster.properties.name, 'cluster');
@@ -1871,11 +2226,105 @@ def create_embedded_constellation_html():
             
             marker.addTo(clusterLayer);
             label.addTo(clusterLabelLayer);
-        }});
+            
+            // Store markers for tracking
+            clusterMarkers.set(clusterIndex, {{marker, label}});
+        }}
         
-        // Add solar systems (visible at medium zoom as larger circles)
-        solarSystems.forEach(solarSystem => {{
-            const coord = [solarSystem.geometry.coordinates[1], solarSystem.geometry.coordinates[0]];
+        // Debounced cluster rendering
+        let clusterRenderTimeout;
+        let isRenderingClusters = false;
+        
+        function debouncedRenderClusters() {{
+            if (isRenderingClusters) return;
+            clearTimeout(clusterRenderTimeout);
+            clusterRenderTimeout = setTimeout(() => {{
+                isRenderingClusters = true;
+                renderClustersInViewport();
+                setTimeout(() => {{ isRenderingClusters = false; }}, 50);
+            }}, 100);
+        }}
+        
+        // Solar system viewport rendering - track which ones are rendered
+        let renderedSolarSystems = new Set();
+        let solarSystemMarkers = new Map();
+        
+        function renderSolarSystemsInViewport() {{
+            if (map.getZoom() < 2.5) return; // Only render at appropriate zoom
+            
+            const bounds = map.getBounds();
+            const bufferFactor = 0.05; // Very tight buffer for aggressive culling
+            const expandedBounds = bounds.pad(bufferFactor);
+            
+            // Limit solar systems to prevent performance issues
+            const MAX_SOLAR_SYSTEMS = /Mobi|Android/i.test(navigator.userAgent) ? 200 : 400;
+            
+            const systemsToAdd = [];
+            const systemsToRemove = [];
+            
+            solarSystems.forEach((solarSystem, index) => {{
+                const coord = [solarSystem.geometry.coordinates[1], solarSystem.geometry.coordinates[0]];
+                const isInView = expandedBounds.contains(coord);
+                
+                if (isInView && !renderedSolarSystems.has(index)) {{
+                    systemsToAdd.push({{solarSystem, index, coord}});
+                }} else if (!isInView && renderedSolarSystems.has(index)) {{
+                    systemsToRemove.push(index);
+                }}
+            }});
+            
+            // Remove out-of-view systems
+            systemsToRemove.forEach(index => {{
+                const markers = solarSystemMarkers.get(index);
+                if (markers) {{
+                    solarSystemLayer.removeLayer(markers.marker);
+                    solarSystemLabelLayer.removeLayer(markers.label);
+                    solarSystemMarkers.delete(index);
+                    renderedSolarSystems.delete(index);
+                }}
+            }});
+            
+            // Limit and prioritize systems to add (closest to center first)
+            if (systemsToAdd.length > MAX_SOLAR_SYSTEMS) {{
+                const center = map.getCenter();
+                systemsToAdd.sort((a, b) => {{
+                    const distA = center.distanceTo(L.latLng(a.coord));
+                    const distB = center.distanceTo(L.latLng(b.coord));
+                    return distA - distB;
+                }});
+                systemsToAdd.splice(MAX_SOLAR_SYSTEMS);
+            }}
+            
+            // Add new systems in batches
+            const BATCH_SIZE = 20;
+            let currentBatch = 0;
+            
+            function addSolarSystemBatch() {{
+                const start = currentBatch * BATCH_SIZE;
+                const end = Math.min(start + BATCH_SIZE, systemsToAdd.length);
+                
+                for (let i = start; i < end; i++) {{
+                    const {{solarSystem, index, coord}} = systemsToAdd[i];
+                    createSolarSystemMarkers(solarSystem, index, coord);
+                    renderedSolarSystems.add(index);
+                }}
+                
+                currentBatch++;
+                if (end < systemsToAdd.length) {{
+                    requestAnimationFrame(addSolarSystemBatch);
+                }}
+            }}
+            
+            if (systemsToAdd.length > 0) {{
+                requestAnimationFrame(addSolarSystemBatch);
+                // Trigger collision detection after batch rendering completes
+                setTimeout(() => debouncedCollisionDetection(), 500);
+            }}
+            
+            console.log(`Solar systems: added ${{systemsToAdd.length}}, removed ${{systemsToRemove.length}}, total: ${{renderedSolarSystems.size}}`);
+        }}
+        
+        function createSolarSystemMarkers(solarSystem, solarSystemIndex, coord) {{
             const goalCount = solarSystem.properties.goal_count || 1;
             
             // Calculate circle size based on number of goals (min 15, max 40)
@@ -1951,7 +2400,24 @@ def create_embedded_constellation_html():
             
             marker.addTo(solarSystemLayer);
             label.addTo(solarSystemLabelLayer);
-        }});
+            
+            // Store markers for tracking
+            solarSystemMarkers.set(solarSystemIndex, {{marker, label}});
+        }}
+        
+        // Debounced solar system rendering
+        let solarSystemRenderTimeout;
+        let isRenderingSolarSystems = false;
+        
+        function debouncedRenderSolarSystems() {{
+            if (isRenderingSolarSystems) return;
+            clearTimeout(solarSystemRenderTimeout);
+            solarSystemRenderTimeout = setTimeout(() => {{
+                isRenderingSolarSystems = true;
+                renderSolarSystemsInViewport();
+                setTimeout(() => {{ isRenderingSolarSystems = false; }}, 50);
+            }}, 100);
+        }}
         
         // Solar system color mapping function
         const solarSystemColors = new Map();
@@ -1984,11 +2450,11 @@ def create_embedded_constellation_html():
             if (map.getZoom() < 3.5) return; // Only render at high zoom
             
             const bounds = map.getBounds();
-            const bufferFactor = 0.3; // Reduced buffer for better performance
+            const bufferFactor = 0.1; // Much smaller buffer - aggressive culling for performance
             const expandedBounds = bounds.pad(bufferFactor);
             
-            // Performance-friendly maximum star limit for all devices
-            const MAX_STARS = /Mobi|Android/i.test(navigator.userAgent) ? 500 : 800; // Reduced desktop limit too
+            // Much lower star limits to prevent performance issues
+            const MAX_STARS = /Mobi|Android/i.test(navigator.userAgent) ? 300 : 500;
             
             // At high zoom levels (5+), also filter by which solar systems are in the viewport
             // This prevents showing stars from distant solar systems
@@ -2169,6 +2635,114 @@ def create_embedded_constellation_html():
             }}
         }}
         
+        // Label collision detection system
+        function detectLabelCollisions() {{
+            const currentZoom = map.getZoom();
+            
+            // Only apply collision detection at solar system zoom level (2.5 - 4.5)
+            if (currentZoom < 2.5 || currentZoom >= 4.5) {{
+                // At other zoom levels, just show all labels normally
+                [galaxyLabelLayer, clusterLabelLayer, solarSystemLabelLayer].forEach(layer => {{
+                    layer.eachLayer(label => {{
+                        const element = label.getElement();
+                        if (element) {{
+                            element.style.display = 'block';
+                        }}
+                    }});
+                }});
+                return;
+            }}
+            
+            const labels = [];
+            const minDistance = 60; // Minimum distance between labels in pixels
+            
+            // At solar system zoom level, only collect solar system labels for collision detection
+            [solarSystemLabelLayer].forEach((layer, layerIndex) => {{
+                layer.eachLayer(label => {{
+                    const element = label.getElement();
+                    if (element && element.style.display !== 'none') {{
+                        const bounds = element.getBoundingClientRect();
+                        const mapBounds = map.getContainer().getBoundingClientRect();
+                        
+                        // Calculate position relative to map
+                        const centerX = bounds.left + bounds.width/2 - mapBounds.left;
+                        const centerY = bounds.top + bounds.height/2 - mapBounds.top;
+                        
+                        // At solar system zoom level, all labels have same base priority
+                        let priority = 10;
+                        let size = 40;
+                        
+                        // Add distance from center as secondary priority
+                        const mapCenter = {{
+                            x: map.getContainer().clientWidth / 2,
+                            y: map.getContainer().clientHeight / 2
+                        }};
+                        const distanceFromCenter = Math.sqrt(
+                            Math.pow(centerX - mapCenter.x, 2) + 
+                            Math.pow(centerY - mapCenter.y, 2)
+                        );
+                        priority += Math.max(0, 50 - distanceFromCenter / 10);
+                        
+                        labels.push({{
+                            element,
+                            x: centerX,
+                            y: centerY,
+                            width: bounds.width || size,
+                            height: bounds.height || 20,
+                            priority,
+                            layerType: 2 // Solar system layer
+                        }});
+                    }}
+                }});
+            }});
+            
+            // Sort by priority (highest first)
+            labels.sort((a, b) => b.priority - a.priority);
+            
+            // Track occupied areas
+            const occupiedAreas = [];
+            
+            // Check each label for collisions
+            labels.forEach(label => {{
+                let hasCollision = false;
+                
+                for (const occupied of occupiedAreas) {{
+                    const dx = Math.abs(label.x - occupied.x);
+                    const dy = Math.abs(label.y - occupied.y);
+                    
+                    // Check if labels would overlap
+                    if (dx < (label.width + occupied.width) / 2 + minDistance / 2 &&
+                        dy < (label.height + occupied.height) / 2 + minDistance / 2) {{
+                        hasCollision = true;
+                        break;
+                    }}
+                }}
+                
+                if (hasCollision) {{
+                    // Hide this label due to collision
+                    label.element.style.display = 'none';
+                }} else {{
+                    // Show this label and mark area as occupied
+                    label.element.style.display = 'block';
+                    occupiedAreas.push({{
+                        x: label.x,
+                        y: label.y,
+                        width: label.width,
+                        height: label.height
+                    }});
+                }}
+            }});
+            
+            console.log(`Solar system label collision detection: ${{occupiedAreas.length}} labels visible, ${{labels.length - occupiedAreas.length}} hidden due to collisions`);
+        }}
+        
+        // Debounced collision detection
+        let collisionTimeout;
+        function debouncedCollisionDetection() {{
+            clearTimeout(collisionTimeout);
+            collisionTimeout = setTimeout(detectLabelCollisions, 200);
+        }}
+        
         // Improved debounced star rendering with throttling
         let renderTimeout;
         let isRendering = false;
@@ -2181,6 +2755,7 @@ def create_embedded_constellation_html():
                 setTimeout(() => {{ isRendering = false; }}, 50);
             }}, 150); // Increased debounce for mobile
         }}
+        
         
         // Set initial view to show all galaxies
         const bounds = L.latLngBounds(galaxies.map(g => [g.geometry.coordinates[1], g.geometry.coordinates[0]]));
@@ -2328,8 +2903,15 @@ def create_embedded_constellation_html():
                     map.addLayer(clusterLayer);
                     map.addLayer(clusterLabelLayer);
                 }}
+                
+                // Trigger aggressive viewport-based cluster rendering
+                debouncedRenderClusters();
+                
                 visibleLayers.push('Clusters');
-                objectCount += clusters.length;
+                objectCount += renderedClusters.size;
+                
+                // Trigger collision detection for cluster labels
+                setTimeout(() => debouncedCollisionDetection(), 300);
             }} else {{
                 if (map.hasLayer(clusterLayer)) {{
                     map.removeLayer(clusterLayer);
@@ -2347,8 +2929,25 @@ def create_embedded_constellation_html():
                 if (map.hasLayer(starLayer)) {{
                     map.removeLayer(starLayer);
                 }}
+                
+                // Trigger aggressive viewport-based solar system rendering
+                debouncedRenderSolarSystems();
+                
                 visibleLayers.push('Solar Systems');
-                objectCount += solarSystems.length;
+                objectCount += renderedSolarSystems.size;
+                
+                // Control label visibility based on zoom level
+                const showLabels = zoom >= 4.0; // Only show labels at zoom 4.0+
+                solarSystemLabelLayer.eachLayer(layer => {{
+                    if (layer.getElement()) {{
+                        layer.getElement().style.display = showLabels ? 'block' : 'none';
+                    }}
+                }});
+                
+                // Trigger collision detection after visibility changes
+                if (showLabels) {{
+                    debouncedCollisionDetection();
+                }}
             }} else if (zoom >= 4.5) {{
                 // Show individual stars, hide solar systems
                 if (!map.hasLayer(starLayer)) {{
@@ -2424,6 +3023,9 @@ def create_embedded_constellation_html():
             const zoom = map.getZoom();
             updateContextAndLabels(zoom);
             debouncedRenderStars();
+            debouncedRenderSolarSystems(); // Add aggressive solar system culling
+            debouncedRenderClusters(); // Add aggressive cluster culling
+            debouncedCollisionDetection(); // Detect and resolve label collisions
         }});
         
         // Search functionality
@@ -2751,9 +3353,80 @@ def create_embedded_constellation_html():
             }}, 1000); // Wait for map to fully initialize
         }}
         
-        // Mobile panel collapse functionality
+        // Simple and reliable mobile detection
+        function isMobileDevice() {{
+            // Check user agent for mobile devices
+            const userAgent = navigator.userAgent;
+            const isMobileUA = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+            
+            // Check if it's a touch device
+            const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            
+            // Force mobile for any touch device or known mobile UA
+            const isMobile = isMobileUA || isTouchDevice;
+            
+            console.log(`Simple mobile detection: UA=${{isMobileUA}}, Touch=${{isTouchDevice}}, Final=${{isMobile}}`);
+            console.log(`UserAgent: ${{userAgent}}`);
+            
+            return isMobile;
+        }}
+        
+        // Mobile UI functionality
+        function initMobileUI() {{
+            const infoIcon = document.querySelector('.mobile-info-icon');
+            const searchIcon = document.querySelector('.mobile-search-icon');
+            
+            if (!infoIcon || !searchIcon) {{
+                console.log('Mobile icons not found in DOM');
+                return;
+            }}
+            
+            if (isMobileDevice()) {{
+                console.log('Showing mobile icons');
+                // Show mobile icons
+                infoIcon.style.display = 'flex';
+                searchIcon.style.display = 'flex';
+                
+                // Mobile info icon click handler (only add if not already added)
+                if (!infoIcon.hasAttribute('data-listener-added')) {{
+                    infoIcon.setAttribute('data-listener-added', 'true');
+                    infoIcon.addEventListener('click', function() {{
+                        showWelcomeModal();
+                    }});
+                }}
+                
+                // Mobile search icon click handler (only add if not already added)
+                if (!searchIcon.hasAttribute('data-listener-added')) {{
+                    searchIcon.setAttribute('data-listener-added', 'true');
+                    searchIcon.addEventListener('click', function() {{
+                    const searchPanel = document.querySelector('.search-panel');
+                    const isExpanded = searchPanel.classList.contains('mobile-expanded');
+                    
+                    if (isExpanded) {{
+                        searchPanel.classList.remove('mobile-expanded');
+                        this.style.background = 'rgba(10, 15, 35, 0.95)';
+                    }} else {{
+                        searchPanel.classList.add('mobile-expanded');
+                        this.style.background = 'rgba(100, 200, 255, 0.2)';
+                        // Focus the search input
+                        setTimeout(() => {{
+                            const searchInput = document.getElementById('player-search');
+                            if (searchInput) searchInput.focus();
+                        }}, 100);
+                    }}
+                    }});
+                }}
+            }} else {{
+                console.log('Hiding mobile icons (desktop detected)');
+                // Hide mobile icons on desktop
+                infoIcon.style.display = 'none';
+                searchIcon.style.display = 'none';
+            }}
+        }}
+        
+        // Mobile panel collapse functionality  
         function initMobilePanelCollapse() {{
-            if (window.innerWidth <= 768) {{
+            if (isMobileDevice()) {{
                 const panelTitles = document.querySelectorAll('.panel-title');
                 panelTitles.forEach(title => {{
                     title.addEventListener('click', function() {{
@@ -2772,8 +3445,8 @@ def create_embedded_constellation_html():
                     }});
                 }});
                 
-                // Start with some panels collapsed to save space
-                const nonEssentialPanels = ['.controls-panel', '.legend-panel'];
+                // Start with some panels collapsed to save space (only legend panel since controls/zoom are hidden)
+                const nonEssentialPanels = ['.legend-panel'];
                 nonEssentialPanels.forEach(selector => {{
                     const panel = document.querySelector(selector);
                     if (panel) {{
@@ -2784,14 +3457,57 @@ def create_embedded_constellation_html():
             }}
         }}
         
-        // Initialize mobile features
-        initMobilePanelCollapse();
-        window.addEventListener('resize', initMobilePanelCollapse);
+        // Initialize mobile features - defer on mobile for better performance
+        if (isMobileDevice()) {{
+            setTimeout(() => {{
+                console.log('Initializing mobile UI after delay');
+                initMobileUI(); 
+                initMobilePanelCollapse();
+            }}, 1000);
+        }} else {{
+            initMobileUI(); 
+            initMobilePanelCollapse();
+        }}
+        
+        // Handle both resize and orientation changes with debouncing
+        let orientationTimeout;
+        function handleOrientationChange() {{
+            clearTimeout(orientationTimeout);
+            orientationTimeout = setTimeout(() => {{
+                console.log('Orientation/resize change detected, reinitializing mobile UI');
+                // Only reinitialize if on mobile to reduce unnecessary processing
+                if (isMobileDevice()) {{
+                    initMobileUI();
+                    initMobilePanelCollapse();
+                }}
+            }}, 200); // Slightly longer debounce for better performance
+        }}
+        
+        window.addEventListener('resize', handleOrientationChange);
+        window.addEventListener('orientationchange', handleOrientationChange);
+        
+        // Additional check after orientation change completes
+        window.addEventListener('orientationchange', () => {{
+            setTimeout(() => {{
+                console.log('Post-orientation change check');
+                initMobileUI();
+            }}, 500);
+        }});
         
         console.log('NHL Constellation Map initialized successfully!');
         console.log('Zoom levels: -1 to 0 (Galaxies), 0.5+ (+ Clusters), 2.5-4.5 (+ Solar Systems), 4.5+ (+ Individual Goals)');
         console.log('🔗 Share locations by using the "Copy Share Link" button in any celestial object popup');
         console.log('🔍 Search now supports players, goalies, galaxies, clusters, and solar systems');
+        
+        // Show welcome modal on first visit - after map is fully initialized
+        if (!localStorage.getItem('nhl-constellation-welcomed')) {{
+            // Use longer delay on mobile devices for better performance
+            const delay = isMobileDevice() ? 2000 : 500;
+            setTimeout(() => {{
+                console.log(`Showing welcome modal after full initialization (delay: ${{delay}}ms)`);
+                showWelcomeModal();
+            }}, delay);
+        }}
     </script>
 </body>
 </html>'''
