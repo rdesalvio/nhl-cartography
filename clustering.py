@@ -97,25 +97,24 @@ def generate_cluster_name(level_name, cluster_goals, features_used):
             context_info.append(f"Average score context: {avg_team_score:.1f} - {avg_opp_score:.1f}")
         
         if 'player_name' in features_used:
-            top_players = cluster_goals['player_name'].value_counts().head(5)
+            top_players = cluster_goals['player_name'].value_counts().head(2)
             context_info.append(f"Top players: {', '.join([f'{player} ({count})' for player, count in top_players.items()])}")
         
         if 'goalie' in features_used or 'goalie_name' in features_used:
             goalie_col = 'goalie_name' if 'goalie_name' in cluster_goals.columns else 'goalie'
-            top_goalies = cluster_goals[goalie_col].value_counts().head(5)
+            top_goalies = cluster_goals[goalie_col].value_counts().head(2)
             context_info.append(f"Goalies faced: {', '.join([f'{goalie} ({count})' for goalie, count in top_goalies.items()])}")
         
         # Build the prompt
         context_str = '; '.join(context_info)
         
         prompt = f"""You are tasked with creating a {level_name} name for a project which maps all of the goals scored in the NHL into a constellation map. The name should make sense based on the attributes of the goals contained in the cluster and should resemble names used in astronomy for our real universe.
-Please provide only the name (2-3 words maximum), no explanation. The name should be evocative of the goal characteristics and follow astronomical naming conventions. Try to avoid names like <Goalie Name> <Astrological entity>. Some names like that are ok but if there is a way you can combine the name with an astrological word, do that without just concatenating.
-Only use the goalie name if the same goalie appears 3 or more times within the grouping.
+Please provide only the name (2-3 words maximum), no explanation. The name should be evocative of the goal characteristics and follow astronomical naming conventions. Do not use a name in goalies faced unless a goalie name appears 4 or more times based on the provided context(we are using pandas value_counts() to get the count). For situations, 5v4, 6v4, 5v3, 4v3 are powerplays and 4v5, 4v6, 3v5, 3v4 are shorthanded. 5v6 is on an empty net and 6v5 is scoring with an extra player because your net is empty.
 Some context for the goals in this grouping are: {context_str}."""
         
         # Generate name using Claude
         response = anthropic_client.messages.create(
-            model="claude-3-5-haiku-20241022",
+            model="claude-3-7-sonnet-20250219",
             max_tokens=50,
             messages=[
                 {"role": "user", "content": prompt}
