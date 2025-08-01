@@ -340,6 +340,15 @@ def create_embedded_constellation_html():
             position: relative;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
             overflow-y: auto;
+            
+            /* Hide scrollbar while keeping scroll functionality */
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* Internet Explorer/Edge */
+        }}
+        
+        /* Hide scrollbar for WebKit browsers (Chrome, Safari) */
+        .welcome-content::-webkit-scrollbar {{
+            display: none;
         }}
         
         .welcome-close {{
@@ -496,21 +505,46 @@ def create_embedded_constellation_html():
             }}
             
             /* Welcome modal adjustments for mobile */
+            .welcome-modal {{
+                padding: 0; /* Remove padding that was causing offset */
+                align-items: center; /* Center horizontally */
+                justify-content: center; /* Center both ways */
+                padding-top: 20px; /* Only top spacing */
+                padding-bottom: 20px; /* Bottom spacing for browser UI */
+            }}
+            
             .welcome-content {{
-                margin: 10px;
-                padding: 20px;
-                max-height: 85vh;
+                margin: 15px; /* Margin instead of modal padding for proper centering */
+                padding: 50px 20px 60px 20px; /* Large top padding for close button, extra bottom for browser UI */
+                max-height: 70vh; /* Further reduced height */
                 font-size: 14px;
+                width: calc(100vw - 30px); /* Full viewport width minus margins */
+                max-width: calc(100vw - 30px); /* Ensure it doesn't exceed viewport */
+                box-sizing: border-box; /* Include padding in width calculation */
             }}
             
             .welcome-title {{
-                font-size: 20px;
+                font-size: 18px;
                 margin-bottom: 16px;
+                margin-top: 0; /* Remove top margin since we have padding */
+                line-height: 1.3;
+                text-align: center;
             }}
             
             .welcome-text {{
+                font-size: 13px;
+                margin-bottom: 12px;
+                line-height: 1.4;
+            }}
+            
+            /* Make close button smaller and better positioned on mobile */
+            .welcome-close {{
+                width: 30px;
+                height: 30px;
+                top: 8px;
+                right: 8px;
                 font-size: 14px;
-                margin-bottom: 14px;
+                font-weight: bold;
             }}
             
             /* Hide desktop info button on mobile */
