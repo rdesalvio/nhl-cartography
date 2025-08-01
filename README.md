@@ -19,5 +19,13 @@ The clustering itself is done using the UMAP algorithm to reduce the dimensional
 ## Mapping
 The mapping coordinates are generated using controlled randomness. There are some shapes inspired from real astrological concepts like a spiral galaxy and circular solar systems but they really are just random points in space. Its just that cluster integrity is maintained and placed at similar points. The points are generated and then placed in GeoJSON format and rendered in the UI.
 
+## Generating Names
+An LLM was used to name the celestial objects. The prompt used is as follows:
+```
+You are tasked with creating a <celestial level> name for a project which maps all of the goals scored in the NHL into a constellation map. The name should make sense based on the attributes of the goals contained in the cluster and should resemble names used in astronomy for our real universe.
+Please provide only the name (2-3 words maximum), no explanation. The name should be evocative of the goal characteristics and follow astronomical naming conventions. Do not use a name in goalies faced unless a goalie name appears 4 or more times based on the provided context(we are using pandas value_counts() to get the count). For situations, 5v4, 6v4, 5v3, 4v3 are powerplays and 4v5, 4v6, 3v5, 3v4 are shorthanded. 5v6 is on an empty net and 6v5 is scoring with an extra player because your net is empty.
+Some context for the goals in this grouping are: <data context>.
+```
+
 ## UI
 I am not as well versed in writing UIs so I leaned heavily on AI for this. I was excited to try out the SOTA models and claude code was pretty much exclusively used. I had an idea in my head of what I wanted and was able to create it. It seems to work well. Is the code good? I doubt if you asked an expert they would say yes, but I was happy with the result and it was done better/faster than if I had just tried on my own. You can see the CLAUDE.md file I used.
