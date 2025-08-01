@@ -991,10 +991,6 @@ def create_embedded_constellation_html():
             <div class="legend-color" style="background: radial-gradient(circle, #ff00ff 20%, #cc00ff 60%, #9900cc 100%); box-shadow: 0 0 10px rgba(204, 0, 255, 0.5);"></div>
             <span><strong>Solar Systems</strong> - Goalscorer + Goaltender groups</span>
         </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: radial-gradient(circle, #00ff80 20%, #00ff41 60%, #00cc33 100%); box-shadow: 0 0 10px rgba(0, 255, 102, 0.5);"></div>
-            <span><strong>Stars</strong> - Individual goals</span>
-        </div>
     </div>
     
     <div class="ui-panel zoom-panel">
@@ -1029,6 +1025,40 @@ def create_embedded_constellation_html():
             </div>
             <div class="welcome-text">
                 <strong>🔍 Interactive Features:</strong> Click on any object to see information about goals it contains. The stars themselves have detailed information about the goal, including video highlights when available. Use the search feature to find specific players and see all their connected goals highlighted with golden lines across the map to form constellations. Every level contains a share button so if you find something cool, hit the share button and the link will take someone directly to that location on the star chart.
+            </div>
+            <div class="welcome-text">
+                <strong>🔍 How to Interpret:</strong> Think of this map as a star chart where every NHL goal becomes a star, and similar goals
+                naturally cluster together to form cosmic neighborhoods.
+
+                <p><strong>What Makes Goals Similar?</strong><br>
+                Goals are grouped based on hockey situations:
+                <ul>
+                    <li><strong>Where the shot came from</strong> - Goals from the slot vs. the point vs. faceoff circles</li>
+                    <li><strong>How it was scored</strong> - Wrist shots, slap shots, deflections, etc.</li>
+                    <li><strong>Game situation</strong> - Power play, penalty kill, even strength, empty net</li>
+                    <li><strong>When it happened</strong> - Early in periods vs. late, different periods</li>
+                    <li><strong>Who scored and who got beat</strong> - Similar players tend to score similar goals</li>
+                </ul>
+                </p>
+
+                <p><strong>Reading the Map:</strong><br>
+                The map has three levels, just like looking at the night sky with different telescopes:</p>
+
+                <ul>
+                    <li><strong>🌌 Galaxies (Red)</strong> - Broad categories like "slot shots at even strength" or "point shots on the power
+                play"</li>
+                    <li><strong>⭐ Clusters (Blue)</strong> - More specific situations like "first goals in the game scored in the first" or "goals in a 1-goal game scored in the 3rd period"</li>
+                    <li><strong>🪐 Solar Systems (Purple)</strong> - Very specific scenarios, often involving the same goalie getting beat in
+                similar ways</li>
+                </ul>
+
+                <p><strong>What This Tells You:</strong><br>
+                • <em>Large formations</em> = Common NHL scoring situations<br>
+                • <em>Pattern formation</em> = Some goalies get beat in similar ways which can be seen at solar system</p>
+                • <em>Isolated stars</em> = Rare or spectacular goals</p>
+
+                <p>Use the search to find your favorite player and see their "constellation" - the pattern of how and where they typically
+                score!</p>
             </div>
             <div class="welcome-text">
                 <strong>📚 About:</strong> This project is inspired by the fabulous <a href="https://anvaka.github.io/map-of-github">Map Of Github</a>. The code to generate this project can be found on it's github repository <a href="https://github.com/rdesalvio/nhl-cartography">nhl-cartography</a>

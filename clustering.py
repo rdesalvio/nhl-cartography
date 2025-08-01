@@ -234,9 +234,6 @@ def load_and_prepare_data():
     df['season_day'] = df['game_date'].apply(calculate_season_day)
 
     print(f"Goals from 2023 onwards: {len(df):,}")
-
-    # Filter out empty nets
-    #df = df[~df['goalie'].isna()].copy()
         
     # Normalize coordinates to same side of ice
     df['x'] = pd.to_numeric(df['x'], errors='coerce')
@@ -414,9 +411,6 @@ def perform_umap_hdbscan_clustering(df_encoded, step_name, min_cluster_size=50):
     # Apply UMAP for dimensionality reduction
     print("Applying UMAP dimensionality reduction...")
     umap_reducer = umap.UMAP(
-        #n_components=15,
-        #n_neighbors=15,
-        #min_dist=0.1,
         n_components=10,
         n_neighbors=20,
         min_dist=0.15,
