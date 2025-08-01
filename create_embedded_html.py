@@ -314,6 +314,96 @@ def create_embedded_constellation_html():
             transform: scale(1.1);
         }}
         
+        /* Welcome Information Modal */
+        .welcome-modal {{
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(10px);
+        }}
+        
+        .welcome-content {{
+            background: linear-gradient(135deg, rgba(10, 15, 35, 0.95) 0%, rgba(15, 20, 45, 0.95) 100%);
+            border: 2px solid rgba(100, 200, 255, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 600px;
+            max-height: 80vh;
+            margin: 20px;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+        }}
+        
+        .welcome-close {{
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 0, 0, 0.3);
+            border: 2px solid rgba(255, 102, 102, 0.6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #ff6666;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 2001;
+            touch-action: manipulation;
+        }}
+        
+        .welcome-close:hover {{
+            background: rgba(255, 0, 0, 0.4);
+            transform: scale(1.1);
+        }}
+        
+        .welcome-title {{
+            color: #64c8ff;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+        }}
+        
+        .welcome-text {{
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+            margin-bottom: 16px;
+            font-size: 15px;
+        }}
+        
+        .welcome-text:last-child {{
+            margin-bottom: 0;
+        }}
+        
+        /* Desktop info button in search panel */
+        .desktop-info-btn {{
+            float: right;
+            cursor: pointer;
+            opacity: 0.7;
+            font-size: 14px;
+            padding: 2px 6px;
+            border-radius: 50%;
+            background: rgba(100, 200, 255, 0.2);
+            transition: all 0.3s ease;
+        }}
+        
+        .desktop-info-btn:hover {{
+            opacity: 1;
+            background: rgba(100, 200, 255, 0.4);
+            transform: scale(1.1);
+        }}
+        
         /* Mobile responsive layout */
         @media screen and (max-width: 768px), 
                screen and (max-height: 768px) and (hover: none) and (pointer: coarse) {{
@@ -403,6 +493,29 @@ def create_embedded_constellation_html():
             .controls-panel,
             .zoom-panel {{
                 display: none !important;
+            }}
+            
+            /* Welcome modal adjustments for mobile */
+            .welcome-content {{
+                margin: 10px;
+                padding: 20px;
+                max-height: 85vh;
+                font-size: 14px;
+            }}
+            
+            .welcome-title {{
+                font-size: 20px;
+                margin-bottom: 16px;
+            }}
+            
+            .welcome-text {{
+                font-size: 14px;
+                margin-bottom: 14px;
+            }}
+            
+            /* Hide desktop info button on mobile */
+            .desktop-info-btn {{
+                display: none;
             }}
         }}
         
@@ -841,16 +954,11 @@ def create_embedded_constellation_html():
         <div>Loading NHL Constellation Map...</div>
     </div>
 
-    <div class="ui-panel title-panel">
-        <h1>NHL Constellation Map</h1>
-        <p>Goals scored in the NHL from 2023+ are placed into different astrological objects using clustering techniques and then mapped into space
-         with graph layout algorithms. "Similar" goals appear near one another.</p>
-         <p>The search functionality lets you see at a 
-         glance where players exist in the galaxy, charting their own constellations.</p>
-    </div>
-    
     <div class="ui-panel search-panel">
-        <div class="panel-title">🔍 Universal Search</div>
+        <div class="panel-title">
+            🔍 Universal Search
+            <span class="desktop-info-btn" onclick="showWelcomeModal()" title="Show welcome information">ℹ️</span>
+        </div>
         <div class="search-container">
             <input type="text" id="player-search" class="search-input" placeholder="Search players..." autocomplete="off">
             <button id="search-clear" class="search-clear" style="display: none;">✕</button>
@@ -908,6 +1016,26 @@ def create_embedded_constellation_html():
     <div class="mobile-info-icon" style="display: none;">ℹ</div>
     <div class="mobile-search-icon" style="display: none;">🔍</div>
     
+    <!-- Welcome Information Modal -->
+    <div id="welcome-modal" class="welcome-modal">
+        <div class="welcome-content">
+            <div class="welcome-close" onclick="closeWelcomeModal()">✕</div>
+            <div class="welcome-title">🌌 Welcome to the NHL Star Chart</div>
+            <div class="welcome-text">
+                Explore NHL goal data as never before! This interactive visualization maps over 16,000 goals from the 2023 NHL season+ into cosmic formations - galaxies, clusters, solar systems, and individual stars.
+            </div>
+            <div class="welcome-text">
+                <strong>⭐ What You'll Find:</strong> Goals are clustered by location on ice, shot type, game context, and player similarity. Similar goals form "galaxies" - you might find all the goals from a specific area of the rink, or goals scored in similar game situations grouped together like stellar formations. Finally, solar systems portray goals which share similar goalscorer and goaltender names. The names of celestial features are determined by the goals they contain.
+            </div>
+            <div class="welcome-text">
+                <strong>🔍 Interactive Features:</strong> Click on any object to see information about goals it contains. The stars themselves have detailed information about the goal, including video highlights when available. Use the search feature to find specific players and see all their connected goals highlighted with golden lines across the map to form constellations. Every level contains a share button so if you find something cool, hit the share button and the link will take someone directly to that location on the star chart.
+            </div>
+            <div class="welcome-text">
+                <strong>📚 About:</strong> This project is inspired by the fabulous <a href="https://anvaka.github.io/map-of-github">Map Of Github</a>. The code to generate this project can be found on it's github repository <a href="https://github.com/rdesalvio/nhl-cartography">nhl-cartography</a>
+            </div>
+        </div>
+    </div>
+
     <!-- Leaflet JavaScript -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
@@ -917,6 +1045,53 @@ def create_embedded_constellation_html():
         
         // Hide loading screen once data is loaded
         document.getElementById('loading').style.display = 'none';
+        
+        // Welcome modal functions - simplified and reliable
+        window.closeWelcomeModal = function() {{
+            console.log('Attempting to close welcome modal');
+            const modal = document.getElementById('welcome-modal');
+            if (modal) {{
+                modal.style.display = 'none';
+                localStorage.setItem('nhl-constellation-welcomed', 'true');
+                console.log('Welcome modal closed successfully');
+            }} else {{
+                console.log('Modal element not found');
+            }}
+        }}
+        
+        function showWelcomeModal() {{
+            const modal = document.getElementById('welcome-modal');
+            if (modal) {{
+                modal.style.display = 'flex';
+                console.log('Welcome modal shown');
+            }}
+        }}
+        
+        // Set up modal event listeners after DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {{
+            const modal = document.getElementById('welcome-modal');
+            const closeBtn = document.querySelector('.welcome-close');
+            
+            if (modal && closeBtn) {{
+                // Close button click
+                closeBtn.addEventListener('click', closeWelcomeModal);
+                closeBtn.addEventListener('touchstart', function(e) {{
+                    e.preventDefault();
+                    closeWelcomeModal();
+                }});
+                
+                // Click outside to close
+                modal.addEventListener('click', function(e) {{
+                    if (e.target === modal) {{
+                        closeWelcomeModal();
+                    }}
+                }});
+                
+                console.log('Modal event listeners attached');
+            }}
+        }});
+        
+        
         
         // Custom CRS for our coordinate system
         const customCRS = L.extend({{}}, L.CRS.Simple, {{
@@ -3152,48 +3327,7 @@ def create_embedded_constellation_html():
                 if (!infoIcon.hasAttribute('data-listener-added')) {{
                     infoIcon.setAttribute('data-listener-added', 'true');
                     infoIcon.addEventListener('click', function() {{
-                    const titlePanel = document.querySelector('.title-panel');
-                    const isVisible = titlePanel.style.display === 'block';
-                    
-                    if (isVisible) {{
-                        titlePanel.style.display = 'none';
-                        this.style.background = 'rgba(10, 15, 35, 0.95)';
-                    }} else {{
-                        titlePanel.style.display = 'block';
-                        titlePanel.style.position = 'fixed';
-                        titlePanel.style.top = '70px';
-                        titlePanel.style.left = '10px';
-                        titlePanel.style.right = '10px';
-                        titlePanel.style.zIndex = '1003';
-                        this.style.background = 'rgba(100, 200, 255, 0.2)';
-                        
-                        // Add close button
-                        if (!titlePanel.querySelector('.mobile-close-btn')) {{
-                            const closeBtn = document.createElement('div');
-                            closeBtn.className = 'mobile-close-btn';
-                            closeBtn.innerHTML = '✕';
-                            closeBtn.style.cssText = `
-                                position: absolute;
-                                top: 10px;
-                                right: 10px;
-                                width: 24px;
-                                height: 24px;
-                                background: rgba(255, 0, 0, 0.2);
-                                border-radius: 50%;
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                                cursor: pointer;
-                                font-size: 12px;
-                                color: #ff6b6b;
-                            `;
-                            closeBtn.onclick = () => {{
-                                titlePanel.style.display = 'none';
-                                document.querySelector('.mobile-info-icon').style.background = 'rgba(10, 15, 35, 0.95)';
-                            }};
-                            titlePanel.appendChild(closeBtn);
-                        }}
-                    }}
+                        showWelcomeModal();
                     }});
                 }}
                 
@@ -3259,9 +3393,17 @@ def create_embedded_constellation_html():
             }}
         }}
         
-        // Initialize mobile features
-        initMobileUI(); 
-        initMobilePanelCollapse();
+        // Initialize mobile features - defer on mobile for better performance
+        if (isMobileDevice()) {{
+            setTimeout(() => {{
+                console.log('Initializing mobile UI after delay');
+                initMobileUI(); 
+                initMobilePanelCollapse();
+            }}, 1000);
+        }} else {{
+            initMobileUI(); 
+            initMobilePanelCollapse();
+        }}
         
         // Handle both resize and orientation changes with debouncing
         let orientationTimeout;
@@ -3269,9 +3411,12 @@ def create_embedded_constellation_html():
             clearTimeout(orientationTimeout);
             orientationTimeout = setTimeout(() => {{
                 console.log('Orientation/resize change detected, reinitializing mobile UI');
-                initMobileUI();
-                initMobilePanelCollapse();
-            }}, 100);
+                // Only reinitialize if on mobile to reduce unnecessary processing
+                if (isMobileDevice()) {{
+                    initMobileUI();
+                    initMobilePanelCollapse();
+                }}
+            }}, 200); // Slightly longer debounce for better performance
         }}
         
         window.addEventListener('resize', handleOrientationChange);
@@ -3289,6 +3434,16 @@ def create_embedded_constellation_html():
         console.log('Zoom levels: -1 to 0 (Galaxies), 0.5+ (+ Clusters), 2.5-4.5 (+ Solar Systems), 4.5+ (+ Individual Goals)');
         console.log('🔗 Share locations by using the "Copy Share Link" button in any celestial object popup');
         console.log('🔍 Search now supports players, goalies, galaxies, clusters, and solar systems');
+        
+        // Show welcome modal on first visit - after map is fully initialized
+        if (!localStorage.getItem('nhl-constellation-welcomed')) {{
+            // Use longer delay on mobile devices for better performance
+            const delay = isMobileDevice() ? 2000 : 500;
+            setTimeout(() => {{
+                console.log(`Showing welcome modal after full initialization (delay: ${{delay}}ms)`);
+                showWelcomeModal();
+            }}, delay);
+        }}
     </script>
 </body>
 </html>'''
