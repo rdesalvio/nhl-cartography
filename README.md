@@ -1,6 +1,6 @@
 # NHL Cartography
 Every goal scored in the NHL can be thought of as a location in time and space. This project captures those locations, groups them based on similarity, and maps them. 
-<img src="screenshots/sample_stars.png"/>
+<img src="visualizations/nhl_star_chart.png"/>
 
 ## Background
 This project is directly inspired by the [Map of Github](https://anvaka.github.io/map-of-github) and uses many of the same concepts. Goal data is soured from the [NHL API](https://github.com/Zmalski/NHL-API-Reference). The UI is entirely "vibe coded" with the aid of Claude Code. An AI agent was used in the development and exploration of the clustering process but it is mostly my code. It is also my code for pulling the data. I used this project as a way to explore the current state of AI tools and had some fun with a dataset I am familiar with. This entire project is meant to be fun and not intended for any real deep dive into the data.
@@ -28,4 +28,12 @@ Some context for the goals in this grouping are: <data context>.
 ```
 
 ## UI
-I am not as well versed in writing UIs so I leaned heavily on AI for this. I was excited to try out the SOTA models and claude code was pretty much exclusively used. I had an idea in my head of what I wanted and was able to create it. It seems to work well. Is the code good? I doubt if you asked an expert they would say yes, but I was happy with the result and it was done better/faster than if I had just tried on my own. You can see the CLAUDE.md file I used.
+I am not as well versed in writing UIs so I leaned heavily on AI for this. I was excited to try out the SOTA models and Claude Code was pretty much exclusively used. I had an idea in my head of what I wanted and was able to create it. It seems to work well. Is the code good? I doubt if you asked an expert they would say yes, but I was happy with the result and it was done better/faster than if I had just tried on my own. You can see the CLAUDE.md file I used.
+
+A little about the UI, it is split into 2. A "static" star chart and a "free roam" star chart. The free roam UI was the original idea but after some early feedback, it was way too difficult to use on mobile and perhaps a little too hard to understand. This led me to the static version. More focused on generating constellations, this UI is much easier to use on mobile and I think its easier for people to pick up and just "get". Its a fun way to visualize what the clustering is doing and to view your favorite players goals.
+
+I left the free roam up because I think its a better way to view the clusters at your leasiure. Just be warned that it works better on desktop than mobile and can be confusing.
+
+
+## Additional
+- The font used in the visualization is from [amorphous](https://amorphous.itch.io/beholden)
