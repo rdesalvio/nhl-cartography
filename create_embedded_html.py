@@ -4,14 +4,23 @@ import os
 def create_embedded_constellation_html():
     """Create an HTML file with embedded GeoJSON data in the root directory"""
     
-    # Read the GeoJSON data
-    geojson_path = 'visualizations/nhl_constellation_map.geojson'
-    if not os.path.exists(geojson_path):
-        print(f"Error: {geojson_path} not found. Run mapping.py first.")
+    # Read both GeoJSON files - static for star map, original for free roam
+    static_path = 'visualizations/nhl_constellation_map_static.geojson'
+    original_path = 'visualizations/nhl_constellation_map.geojson'
+    
+    if not os.path.exists(static_path):
+        print(f"Error: {static_path} not found. Run mapping_static.py first.")
+        return
+        
+    if not os.path.exists(original_path):
+        print(f"Error: {original_path} not found. Run mapping.py first.")
         return
     
-    with open(geojson_path, 'r') as f:
-        geojson_data = json.load(f)
+    with open(static_path, 'r') as f:
+        static_geojson_data = json.load(f)
+        
+    with open(original_path, 'r') as f:
+        original_geojson_data = json.load(f)
     
     # HTML template with embedded data
     html_content = f'''<!DOCTYPE html>
@@ -314,6 +323,162 @@ def create_embedded_constellation_html():
             transform: scale(1.1);
         }}
         
+        /* View Mode Toggle */
+        .view-mode-toggle {{
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(10, 15, 35, 0.95);
+            border: 1px solid rgba(100, 200, 255, 0.4);
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            color: #64c8ff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }}
+        
+        .view-mode-toggle:hover {{
+            background: rgba(100, 200, 255, 0.2);
+            transform: scale(1.05);
+        }}
+        
+        /* Filter Panel for Star Map Mode */
+        .filter-panel {{
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(10, 15, 35, 0.95);
+            border: 1px solid rgba(100, 200, 255, 0.4);
+            border-radius: 12px;
+            padding: 20px;
+            min-width: 280px;
+            max-width: 320px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            display: none;
+        }}
+        
+        .filter-panel.show {{
+            display: block;
+        }}
+        
+        .filter-section {{
+            margin-bottom: 16px;
+        }}
+        
+        .filter-label {{
+            display: block;
+            font-size: 14px;
+            color: #64c8ff;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }}
+        
+        .filter-options {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }}
+        
+        .filter-option {{
+            background: rgba(100, 200, 255, 0.1);
+            border: 1px solid rgba(100, 200, 255, 0.3);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }}
+        
+        .filter-option.selected {{
+            background: rgba(100, 200, 255, 0.3);
+            border-color: rgba(100, 200, 255, 0.6);
+            color: #ffffff;
+        }}
+        
+        .filter-option:hover {{
+            background: rgba(100, 200, 255, 0.2);
+        }}
+        
+        .draw-constellation-btn {{
+            width: 100%;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 16px;
+        }}
+        
+        .draw-constellation-btn:hover {{
+            transform: scale(1.02);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }}
+        
+        .draw-constellation-btn:disabled {{
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }}
+        
+        /* Star Map Mode Styles */
+        .star-map-mode {{
+            display: none;
+        }}
+        
+        .star-map-mode.active {{
+            display: block;
+        }}
+        
+        .free-roam-mode {{
+            display: block;
+        }}
+        
+        .free-roam-mode.hidden {{
+            display: none;
+        }}
+        
+        /* Galaxy Area Shading */
+        .galaxy-area {{
+            fill-opacity: 0.1;
+            stroke-opacity: 0.2;
+            stroke-width: 2;
+        }}
+        
+        .galaxy-label-static {{
+            font-size: 16px;
+            fill: rgba(255, 255, 255, 0.9);
+            text-anchor: middle;
+            dominant-baseline: middle;
+            font-weight: 600;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+        }}
+        
+        /* Galaxy hover tooltip */
+        .galaxy-tooltip {{
+            background: rgba(10, 15, 35, 0.95);
+            border: 1px solid rgba(255, 215, 0, 0.6);
+            border-radius: 6px;
+            color: #ffd700;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 8px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }}
+
         /* Welcome Information Modal */
         .welcome-modal {{
             position: fixed;
@@ -1004,14 +1169,14 @@ def create_embedded_constellation_html():
         </div>
     </div>
     
-    <div class="ui-panel controls-panel">
+    <div class="ui-panel controls-panel free-roam-mode">
         <div class="panel-title">Navigation Guide</div>
         <p>🔍 <strong>Zoom:</strong> Mouse wheel or +/- controls</p>
         <p>🖱️ <strong>Pan:</strong> Click and drag to explore</p>
         <p>⭐ <strong>Goals:</strong> Click stars for detailed info</p>
     </div>
     
-    <div class="ui-panel legend-panel">
+    <div class="ui-panel legend-panel free-roam-mode">
         <div class="panel-title">Color Legend</div>
         <div class="legend-item">
             <div class="legend-color" style="background: radial-gradient(circle, #ff3366 20%, #ff6600 60%, #ffaa00 100%); box-shadow: 0 0 10px rgba(255, 102, 0, 0.5);"></div>
@@ -1027,7 +1192,7 @@ def create_embedded_constellation_html():
         </div>
     </div>
     
-    <div class="ui-panel zoom-panel">
+    <div class="ui-panel zoom-panel free-roam-mode">
         <div class="panel-title">View Status</div>
         <div>Zoom: <span id="zoom-level" class="zoom-indicator">1.0</span></div>
         <div>Visible: <span id="visible-layers" class="visible-layers">Galaxies</span></div>
@@ -1035,12 +1200,46 @@ def create_embedded_constellation_html():
     </div>
     
     <!-- Context bar for showing current galaxy/cluster -->
-    <div id="context-bar" class="context-bar">
+    <div id="context-bar" class="context-bar free-roam-mode">
         <span id="galaxy-context" class="galaxy-context"></span>
         <span id="cluster-context" class="cluster-context"></span>
     </div>
     
     <div id="map"></div>
+    
+    <!-- View Mode Toggle Button -->
+    <button class="view-mode-toggle" onclick="toggleViewMode()">
+        <span id="view-mode-text">Free Roam Mode</span>
+    </button>
+    
+    <!-- Filter Panel for Star Map Mode -->
+    <div class="filter-panel star-map-mode" id="filter-panel">
+        <h3 style="margin-top: 0; color: #64c8ff; font-size: 16px;">Constellation Filters</h3>
+        
+        <div class="filter-section">
+            <label class="filter-label">Shot Type</label>
+            <div class="filter-options" id="shot-type-filters"></div>
+        </div>
+        
+        <div class="filter-section">
+            <label class="filter-label">Situation</label>
+            <div class="filter-options" id="situation-filters"></div>
+        </div>
+        
+        <div class="filter-section">
+            <label class="filter-label">Period</label>
+            <div class="filter-options" id="period-filters"></div>
+        </div>
+        
+        <div class="filter-section">
+            <label class="filter-label">Goal Zone</label>
+            <div class="filter-options" id="zone-filters"></div>
+        </div>
+        
+        <button class="draw-constellation-btn" onclick="drawConstellation()" id="draw-btn" disabled>
+            Draw Constellation
+        </button>
+    </div>
     
     <!-- Mobile Icons (only visible on mobile) -->
     <div class="mobile-info-icon" style="display: none;">ℹ</div>
@@ -1052,13 +1251,19 @@ def create_embedded_constellation_html():
             <div class="welcome-close" onclick="closeWelcomeModal()">✕</div>
             <div class="welcome-title">🌌 Welcome to the NHL Star Chart</div>
             <div class="welcome-text">
-                Explore NHL goal data as never before! This interactive visualization maps over 16,000 goals from the 2023 NHL season+ into cosmic formations - galaxies, clusters, solar systems, and individual stars.
+                Explore NHL goal data as never before! This interactive visualization maps over 16,000 goals from the 2023 NHL season+ into cosmic formations. You have two ways to explore:
             </div>
             <div class="welcome-text">
-                <strong>⭐ What You'll Find:</strong> Goals are clustered by location on ice, shot type, game context, and player similarity. Similar goals form "galaxies" - you might find all the goals from a specific area of the rink, or goals scored in similar game situations grouped together like stellar formations. Finally, solar systems portray goals which share similar goalscorer and goaltender names. The names of celestial features are determined by the goals they contain.
+                <strong>📍 Star Map Mode (Default):</strong> View all goals as a static star chart with galaxy regions subtly shaded. Search for any player and use the filter panel to customize which goals to include, then draw their constellation connecting related goal clusters. Perfect for analyzing specific players or creating custom star patterns.
             </div>
             <div class="welcome-text">
-                <strong>🔍 Interactive Features:</strong> Click on any object to see information about goals it contains. The stars themselves have detailed information about the goal, including video highlights when available. Use the search feature to find specific players and see all their connected goals highlighted with golden lines across the map to form constellations. Every level contains a share button so if you find something cool, hit the share button and the link will take someone directly to that location on the star chart.
+                <strong>🚀 Free Roam Mode:</strong> Switch to the traditional zoomable exploration where you can navigate between galaxies, clusters, solar systems, and individual stars. Zoom in and out to discover the hierarchical structure of goal data and click objects to see detailed information.
+            </div>
+            <div class="welcome-text">
+                <strong>⭐ What You'll Find:</strong> Goals are clustered by location on ice, shot type, game context, and player similarity. Similar goals form "galaxies" - grouped together like stellar formations. The names of all celestial features are determined by the goals they contain.
+            </div>
+            <div class="welcome-text">
+                <strong>🔍 How to Use:</strong> In Star Map mode, search for a player, adjust filters (shot type, period, etc.), and click "Draw Constellation" to see their connected goals. Switch to Free Roam mode using the top-right button to explore by zooming and panning through the cosmic structure.
             </div>
             <div class="welcome-text">
                 <strong>🔍 How to Interpret:</strong> Think of this map as a star chart where every NHL goal becomes a star, and similar goals
@@ -1104,13 +1309,12 @@ def create_embedded_constellation_html():
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <script>
-        // Embedded GeoJSON data
-        const geojsonData = {json.dumps(geojson_data, indent=8)};
+        // Embedded GeoJSON data - static for star map, original for free roam
         
         // Hide loading screen once data is loaded
         document.getElementById('loading').style.display = 'none';
         
-        // Welcome modal functions - simplified and reliable
+        // Welcome modal functions - defined early for immediate access
         window.closeWelcomeModal = function() {{
             console.log('Attempting to close welcome modal');
             const modal = document.getElementById('welcome-modal');
@@ -1121,7 +1325,7 @@ def create_embedded_constellation_html():
             }} else {{
                 console.log('Modal element not found');
             }}
-        }}
+        }};
         
         function showWelcomeModal() {{
             const modal = document.getElementById('welcome-modal');
@@ -1162,6 +1366,30 @@ def create_embedded_constellation_html():
             transformation: new L.Transformation(1, 0, -1, 0)
         }});
         
+        // Embedded GeoJSON data
+        const STAR_MAP_DATA = {json.dumps(static_geojson_data)};
+        const FREE_ROAM_DATA = {json.dumps(original_geojson_data)};
+        
+        // Extract different feature types for dual-mode system
+        const stars = STAR_MAP_DATA.features.filter(f => f.properties.type === 'star');
+        const galaxies = STAR_MAP_DATA.features.filter(f => f.properties.type === 'galaxy');
+        const clusters = STAR_MAP_DATA.features.filter(f => f.properties.type === 'cluster');
+        const solarSystems = STAR_MAP_DATA.features.filter(f => f.properties.type === 'solar_system');
+        
+        // Original hierarchical data for free roam mode
+        const originalGalaxies = FREE_ROAM_DATA.features.filter(f => f.properties.type === 'galaxy');
+        const originalClusters = FREE_ROAM_DATA.features.filter(f => f.properties.type === 'cluster');
+        const originalSolarSystems = FREE_ROAM_DATA.features.filter(f => f.properties.type === 'solar_system');
+        const originalStars = FREE_ROAM_DATA.features.filter(f => f.properties.type === 'star');
+        
+        // Initialize current mode before map creation
+        let currentMode = 'star-map'; // Default to star map mode
+        
+        console.log('Data loaded:', {{
+            starMapMode: {{ stars: stars.length, galaxies: galaxies.length, clusters: clusters.length, solarSystems: solarSystems.length }},
+            freeRoamMode: {{ stars: originalStars.length, galaxies: originalGalaxies.length, clusters: originalClusters.length, solarSystems: originalSolarSystems.length }}
+        }});
+        
         // Initialize the map
         const map = L.map('map', {{
             crs: customCRS,
@@ -1172,7 +1400,104 @@ def create_embedded_constellation_html():
             zoomControl: true,
             attributionControl: false,
             zoomAnimation: true,
-            fadeAnimation: true
+            fadeAnimation: true,
+            closePopupOnClick: false  // Prevent closing popups when clicking on map
+        }});
+        
+        // Global popup management
+        let currentOpenPopup = null;
+        let popupPersistenceEnabled = false;
+        let storedPopupData = null;
+        let isAutoMoving = false;
+        
+        // Override default popup behavior for better control
+        const originalOpenPopup = map.openPopup;
+        map.openPopup = function(popup, latlng, options) {{
+            // Close any existing popup first to prevent multiple popups
+            if (map._popup) {{
+                map._explicitClose = true;
+                map.closePopup();
+                map._explicitClose = false;
+            }}
+            
+            // Store reference to current popup
+            const result = originalOpenPopup.call(this, popup, latlng, options);
+            currentOpenPopup = map._popup;
+            
+            // Enable persistence in free roam mode and store popup data
+            if (currentMode === 'free-roam') {{
+                popupPersistenceEnabled = true;
+                if (currentOpenPopup) {{
+                    storedPopupData = {{
+                        content: currentOpenPopup.getContent(),
+                        latLng: currentOpenPopup.getLatLng(),
+                        options: currentOpenPopup.options
+                    }};
+                }}
+            }} else {{
+                popupPersistenceEnabled = false;
+                storedPopupData = null;
+            }}
+            
+            return result;
+        }};
+        
+        // Handle popup closing with persistence in free roam mode
+        const originalClosePopup = map.closePopup;
+        map.closePopup = function(popup) {{
+            // In free roam mode, only allow explicit closes (user action)
+            if (currentMode === 'free-roam' && popupPersistenceEnabled && !this._explicitClose) {{
+                // Store the popup data before it gets closed
+                if (map._popup && !storedPopupData) {{
+                    storedPopupData = {{
+                        content: map._popup.getContent(),
+                        latLng: map._popup.getLatLng(),
+                        options: map._popup.options
+                    }};
+                }}
+                return this; // Ignore automatic close requests
+            }}
+            
+            // Clear our references on explicit close
+            if (this._explicitClose) {{
+                currentOpenPopup = null;
+                popupPersistenceEnabled = false;
+                storedPopupData = null;
+            }}
+            
+            return originalClosePopup.apply(this, arguments);
+        }};
+        
+        // Handle map movement and popup restoration in free roam mode
+        map.on('movestart autopanstart', function(e) {{
+            if (currentMode === 'free-roam' && map._popup) {{
+                isAutoMoving = true;
+                // Store popup data if not already stored
+                if (!storedPopupData) {{
+                    storedPopupData = {{
+                        content: map._popup.getContent(),
+                        latLng: map._popup.getLatLng(),
+                        options: map._popup.options
+                    }};
+                }}
+            }}
+        }});
+        
+        map.on('moveend autopanend', function(e) {{
+            if (currentMode === 'free-roam' && isAutoMoving && storedPopupData) {{
+                // Restore popup after auto-panning completes
+                setTimeout(() => {{
+                    if (storedPopupData && (!map._popup || !map._popup.isOpen())) {{
+                        const popup = L.popup(storedPopupData.options)
+                            .setLatLng(storedPopupData.latLng)
+                            .setContent(storedPopupData.content);
+                        map.openPopup(popup);
+                    }}
+                    isAutoMoving = false;
+                }}, 150);
+            }} else {{
+                isAutoMoving = false;
+            }}
         }});
         
         // Custom Home Button Control
@@ -1510,13 +1835,12 @@ def create_embedded_constellation_html():
         galaxyLayer.addTo(map);
         galaxyLabelLayer.addTo(map);
         
-        console.log('Loaded', geojsonData.features.length, 'celestial objects');
+        // Use static data for initial star map mode
+        let currentGeojsonData = STAR_MAP_DATA;
         
-        // Separate features by type
-        const galaxies = geojsonData.features.filter(f => f.properties.type === 'galaxy');
-        const clusters = geojsonData.features.filter(f => f.properties.type === 'cluster');
-        const solarSystems = geojsonData.features.filter(f => f.properties.type === 'solar_system');
-        const stars = geojsonData.features.filter(f => f.properties.type === 'star');
+        console.log('Loaded', currentGeojsonData.features.length, 'celestial objects');
+        
+        // Note: galaxies, clusters, solarSystems, stars already defined above from STAR_MAP_DATA
         
         console.log('Processing:', galaxies.length, 'galaxies,', clusters.length, 'clusters,', solarSystems.length, 'solar systems,', stars.length, 'stars');
         
@@ -2757,9 +3081,15 @@ def create_embedded_constellation_html():
         }}
         
         
-        // Set initial view to show all galaxies
-        const bounds = L.latLngBounds(galaxies.map(g => [g.geometry.coordinates[1], g.geometry.coordinates[0]]));
-        map.fitBounds(bounds.pad(0.4));  // Increased padding for wider initial view
+        // Set initial view to show all galaxies (fallback to stars if no galaxies)
+        if (galaxies.length > 0) {{
+            const bounds = L.latLngBounds(galaxies.map(g => [g.geometry.coordinates[1], g.geometry.coordinates[0]]));
+            map.fitBounds(bounds.pad(0.4));  // Increased padding for wider initial view
+        }} else {{
+            // Use star bounds as fallback for initial view
+            const starBounds = L.latLngBounds(stars.map(s => [s.geometry.coordinates[1], s.geometry.coordinates[0]]));
+            map.fitBounds(starBounds.pad(0.4));
+        }}
         
         // Track the last stable context to avoid constant changes
         let stableContext = {{ galaxy: null, cluster: null }};
@@ -3082,14 +3412,26 @@ def create_embedded_constellation_html():
             searchActive.style.display = 'block';
             selectedPlayerSpan.textContent = `${{playerInfo.name}} (${{playerInfo.type}})`;
             
-            // If it's a navigable celestial object, navigate to it
-            if (playerInfo.navigable) {{
-                const targetZoom = playerInfo.type === 'Galaxy' ? 0.5 : 
-                                   playerInfo.type === 'Cluster' ? 2 : 
-                                   playerInfo.type === 'Solar System' ? 3 : 1.5;
-                navigateToLocation(playerInfo.name, playerInfo.type, playerInfo.data.coordinate, targetZoom);
+            // Handle different behaviors based on current mode
+            if (currentMode === 'star-map') {{
+                // In star map mode, enable constellation drawing for players
+                if (playerInfo.type === 'Player' || playerInfo.type === 'Goalie') {{
+                    searchPlayerStarMap(playerInfo.name);
+                    console.log(`Selected ${{playerInfo.name}} for constellation in Star Map mode`);
+                }} else {{
+                    // For celestial objects in star map mode, just show info
+                    console.log(`Selected celestial object ${{playerInfo.name}} in Star Map mode`);
+                }}
             }} else {{
-                drawConnectionLines();
+                // In free roam mode, use existing navigation behavior
+                if (playerInfo.navigable) {{
+                    const targetZoom = playerInfo.type === 'Galaxy' ? 0.5 : 
+                                       playerInfo.type === 'Cluster' ? 2 : 
+                                       playerInfo.type === 'Solar System' ? 3 : 1.5;
+                    navigateToLocation(playerInfo.name, playerInfo.type, playerInfo.data.coordinate, targetZoom);
+                }} else {{
+                    drawConnectionLines();
+                }}
             }}
         }}
         
@@ -3099,6 +3441,16 @@ def create_embedded_constellation_html():
             searchSuggestions.style.display = 'none';
             searchClear.style.display = 'none';
             searchActive.style.display = 'none';
+            
+            // Clear constellation in star map mode
+            if (currentMode === 'star-map' && constellationLayer) {{
+                constellationLayer.clearLayers();
+            }}
+            
+            // Update filters and disable draw button
+            if (currentMode === 'star-map') {{
+                updateActiveFilters();
+            }}
             connectionLines.clearLayers();
         }}
         
@@ -3499,6 +3851,1450 @@ def create_embedded_constellation_html():
         console.log('🔗 Share locations by using the "Copy Share Link" button in any celestial object popup');
         console.log('🔍 Search now supports players, goalies, galaxies, clusters, and solar systems');
         
+        // Dual-Mode System: Star Map (default) and Free Roam
+        // currentMode already declared above before map initialization
+        let starMapLayer = null;
+        let galaxyShadeLayer = null;
+        let constellationLayer = null;
+        let activeFilters = {{}};
+        
+        function initDualModeSystem() {{
+            console.log('Initializing dual-mode system');
+            
+            // Hide ALL free roam layers before initializing star map
+            if (galaxyLayer) map.removeLayer(galaxyLayer);
+            if (galaxyLabelLayer) map.removeLayer(galaxyLabelLayer);
+            if (clusterLayer) map.removeLayer(clusterLayer);
+            if (clusterLabelLayer) map.removeLayer(clusterLabelLayer);
+            if (solarSystemLayer) map.removeLayer(solarSystemLayer);
+            if (solarSystemLabelLayer) map.removeLayer(solarSystemLabelLayer);
+            if (starLayer) map.removeLayer(starLayer);
+            
+            // Initialize star map mode as default
+            initStarMapMode();
+            
+            // Build filter options from data
+            buildFilterOptions();
+            
+            // Hide free roam elements initially
+            toggleElementsByClass('free-roam-mode', false);
+            toggleElementsByClass('star-map-mode', true);
+            
+            console.log('Star Map mode activated as default - all free roam labels hidden');
+        }}
+        
+        function toggleViewMode() {{
+            if (currentMode === 'star-map') {{
+                switchToFreeRoamMode();
+            }} else {{
+                switchToStarMapMode();
+            }}
+        }}
+        
+        function switchToStarMapMode() {{
+            currentMode = 'star-map';
+            document.getElementById('view-mode-text').textContent = 'Free Roam Mode';
+            
+            // Close any open popups when switching modes
+            if (map._popup) {{
+                map._explicitClose = true;
+                map.closePopup();
+                map._explicitClose = false;
+            }}
+            
+            // Hide free roam elements, show star map elements
+            toggleElementsByClass('free-roam-mode', false);
+            toggleElementsByClass('star-map-mode', true);
+            
+            // Hide ALL original free roam layers for clean star map view
+            if (galaxyLayer) map.removeLayer(galaxyLayer);
+            if (galaxyLabelLayer) map.removeLayer(galaxyLabelLayer);
+            if (clusterLayer) map.removeLayer(clusterLayer);
+            if (clusterLabelLayer) map.removeLayer(clusterLabelLayer);
+            if (solarSystemLayer) map.removeLayer(solarSystemLayer);
+            if (solarSystemLabelLayer) map.removeLayer(solarSystemLabelLayer);
+            if (starLayer) map.removeLayer(starLayer);
+            
+            // Clear any rendered viewport elements from free roam mode
+            if (typeof renderedClusters !== 'undefined') renderedClusters.clear();
+            if (typeof renderedSolarSystems !== 'undefined') renderedSolarSystems.clear();
+            if (typeof renderedStars !== 'undefined') renderedStars.clear();
+            if (typeof clusterMarkers !== 'undefined') clusterMarkers.clear();
+            if (typeof solarSystemMarkers !== 'undefined') solarSystemMarkers.clear();
+            if (typeof starMarkers !== 'undefined') starMarkers.clear();
+            
+            // Initialize star map if not already done
+            if (!starMapLayer) {{
+                initStarMapMode();
+            }} else {{
+                // Re-add star map layers
+                map.addLayer(starMapLayer);
+                map.addLayer(galaxyShadeLayer);
+                map.addLayer(constellationLayer);
+            }}
+            
+            // Reset map to show all stars
+            map.setView([0, 0], -0.5);
+            console.log('Switched to Star Map mode');
+        }}
+        
+        function initializeFreeRoamRendering() {{
+            // Override the existing render functions to use original hierarchical data
+            // Store references to star map render functions
+            const starMapRenderStars = window.debouncedRenderStars;
+            const starMapRenderClusters = window.debouncedRenderClusters;
+            const starMapRenderSolarSystems = window.debouncedRenderSolarSystems;
+            
+            // Create free roam specific render functions that work with the original data
+            window.debouncedRenderStars = function() {{
+                if (currentMode !== 'free-roam') return starMapRenderStars();
+                
+                if (isRendering) return;
+                clearTimeout(renderTimeout);
+                renderTimeout = setTimeout(() => {{
+                    isRendering = true;
+                    renderFreeRoamStarsInViewport();
+                    setTimeout(() => {{ isRendering = false; }}, 50);
+                }}, 150);
+            }};
+            
+            window.debouncedRenderClusters = function() {{
+                if (currentMode !== 'free-roam') return starMapRenderClusters();
+                
+                if (isRenderingClusters) return;
+                clearTimeout(clusterRenderTimeout);
+                clusterRenderTimeout = setTimeout(() => {{
+                    isRenderingClusters = true;
+                    renderFreeRoamClustersInViewport();
+                    setTimeout(() => {{ isRenderingClusters = false; }}, 50);
+                }}, 100);
+            }};
+            
+            window.debouncedRenderSolarSystems = function() {{
+                if (currentMode !== 'free-roam') return starMapRenderSolarSystems();
+                
+                if (isRenderingSolarSystems) return;
+                clearTimeout(solarSystemRenderTimeout);
+                solarSystemRenderTimeout = setTimeout(() => {{
+                    isRenderingSolarSystems = true;
+                    renderFreeRoamSolarSystemsInViewport();
+                    setTimeout(() => {{ isRenderingSolarSystems = false; }}, 50);
+                }}, 100);
+            }};
+        }}
+        
+        function generateSolarSystemColor(solarSystemName) {{
+            // Generate consistent color based on solar system name using hash
+            if (!solarSystemName) return '#64c8ff'; // Default color
+            
+            // Create a simple hash from the solar system name
+            let hash = 0;
+            for (let i = 0; i < solarSystemName.length; i++) {{
+                const char = solarSystemName.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32-bit integer
+            }}
+            
+            // Use hash to generate HSL color with good saturation and lightness
+            const hue = Math.abs(hash) % 360;
+            const saturation = 65 + (Math.abs(hash) % 30); // 65-95% saturation
+            const lightness = 50 + (Math.abs(hash) % 25); // 50-75% lightness
+            
+            return `hsl(${{hue}}, ${{saturation}}%, ${{lightness}}%)`;
+        }}
+        
+        function renderFreeRoamStarsInViewport() {{
+            if (map.getZoom() < 4.5) return;
+            
+            const bounds = map.getBounds();
+            const expandedBounds = bounds.pad(0.1);
+            
+            // Clear existing stars
+            starLayer.clearLayers();
+            renderedStars.clear();
+            
+            let starCount = 0;
+            const MAX_STARS = /Mobi|Android/i.test(navigator.userAgent) ? 500 : 1000;
+            
+            for (const star of originalStars) {{
+                if (starCount >= MAX_STARS) break;
+                
+                const coords = star.geometry.coordinates;
+                const latLng = L.latLng(coords[1], coords[0]);
+                
+                if (expandedBounds.contains(latLng)) {{
+                    // Generate consistent color based on solar system
+                    const solarSystemName = star.properties.solar_system;
+                    const solarSystemColor = generateSolarSystemColor(solarSystemName);
+                    
+                    const marker = L.circleMarker(latLng, {{
+                        radius: 6,  // Increased from 4 to 6 for even better clickability
+                        fillColor: solarSystemColor,
+                        color: 'white',
+                        weight: 1.5,  // Slightly thicker border
+                        opacity: 1.0,
+                        fillOpacity: 0.9
+                    }});
+                    
+                    marker.bindPopup(createDetailedStarPopup(star), {{
+                        maxWidth: 450,
+                        className: 'custom-popup',
+                        closeOnEscapeKey: true,
+                        autoPan: true
+                    }});
+                    starLayer.addLayer(marker);
+                    renderedStars.add(star.properties.name);
+                    starCount++;
+                }}
+            }}
+        }}
+        
+        function renderFreeRoamClustersInViewport() {{
+            if (map.getZoom() < 1.5) return;
+            
+            const bounds = map.getBounds();
+            const expandedBounds = bounds.pad(0.1);
+            
+            // Clear existing clusters
+            clusterLayer.clearLayers();
+            clusterLabelLayer.clearLayers();
+            renderedClusters.clear();
+            
+            let clusterCount = 0;
+            const MAX_CLUSTERS = /Mobi|Android/i.test(navigator.userAgent) ? 50 : 100;
+            
+            for (const cluster of originalClusters) {{
+                if (clusterCount >= MAX_CLUSTERS) break;
+                
+                const coords = cluster.geometry.coordinates;
+                const latLng = L.latLng(coords[1], coords[0]);
+                
+                if (expandedBounds.contains(latLng)) {{
+                    const marker = L.circleMarker(latLng, {{
+                        radius: 8,  // Increased from 6 to 8 for better clickability
+                        fillColor: '#ffd700',
+                        color: 'white',
+                        weight: 2,  // Thicker border
+                        opacity: 1.0,
+                        fillOpacity: 0.8
+                    }});
+                    
+                    marker.bindPopup(createHierarchicalPopup(calculateClusterStats(cluster), coords), {{
+                        maxWidth: 400,
+                        className: 'custom-popup',
+                        closeOnEscapeKey: true,
+                        autoPan: true
+                    }});
+                    clusterLayer.addLayer(marker);
+                    
+                    // Add cluster label if zoom is high enough
+                    if (map.getZoom() >= 2.0) {{
+                        const label = L.marker(latLng, {{
+                            icon: L.divIcon({{
+                                className: 'cluster-label',
+                                html: cluster.properties.name.split('.')[1] || 'cluster',
+                                iconSize: null,
+                                iconAnchor: [0, -25]
+                            }})
+                        }});
+                        
+                        // Add popup to cluster label with high-level cluster information
+                        label.bindPopup(createHierarchicalPopup(calculateClusterStats(cluster), coords), {{
+                            maxWidth: 400,
+                            className: 'custom-popup',
+                            closeOnEscapeKey: true,
+                            autoPan: true
+                        }});
+                        
+                        clusterLabelLayer.addLayer(label);
+                    }}
+                    
+                    renderedClusters.add(cluster.properties.name);
+                    clusterCount++;
+                }}
+            }}
+        }}
+        
+        function renderFreeRoamSolarSystemsInViewport() {{
+            if (map.getZoom() < 2.5) return;
+            
+            const bounds = map.getBounds();
+            const expandedBounds = bounds.pad(0.1);
+            
+            // Clear existing solar systems
+            solarSystemLayer.clearLayers();
+            solarSystemLabelLayer.clearLayers();
+            renderedSolarSystems.clear();
+            
+            let solarSystemCount = 0;
+            const MAX_SOLAR_SYSTEMS = /Mobi|Android/i.test(navigator.userAgent) ? 200 : 400;
+            
+            for (const solarSystem of originalSolarSystems) {{
+                if (solarSystemCount >= MAX_SOLAR_SYSTEMS) break;
+                
+                const coords = solarSystem.geometry.coordinates;
+                const latLng = L.latLng(coords[1], coords[0]);
+                
+                if (expandedBounds.contains(latLng)) {{
+                    // Generate consistent color based on solar system name (same as stars)
+                    const solarSystemColor = generateSolarSystemColor(solarSystem.properties.name);
+                    
+                    const marker = L.circleMarker(latLng, {{
+                        radius: 6,  // Increased from 4 to 6 for better clickability
+                        fillColor: solarSystemColor,
+                        color: 'white',
+                        weight: 2,  // Thicker border
+                        opacity: 1.0,
+                        fillOpacity: 0.8
+                    }});
+                    
+                    marker.bindPopup(createHierarchicalPopup(calculateSolarSystemStats(solarSystem), coords), {{
+                        maxWidth: 400,
+                        className: 'custom-popup',
+                        closeOnEscapeKey: true,
+                        autoPan: true
+                    }});
+                    solarSystemLayer.addLayer(marker);
+                    
+                    // Add label if zoom is high enough
+                    if (map.getZoom() >= 4.0) {{
+                        const label = L.marker(latLng, {{
+                            icon: L.divIcon({{
+                                className: 'solar-system-label',
+                                html: solarSystem.properties.name.split('.')[2] || 'system',
+                                iconSize: null,
+                                iconAnchor: [0, -20]
+                            }})
+                        }});
+                        
+                        // Add popup to solar system label with high-level system information
+                        label.bindPopup(createHierarchicalPopup(calculateSolarSystemStats(solarSystem), coords), {{
+                            maxWidth: 400,
+                            className: 'custom-popup',
+                            closeOnEscapeKey: true,
+                            autoPan: true
+                        }});
+                        
+                        solarSystemLabelLayer.addLayer(label);
+                    }}
+                    
+                    renderedSolarSystems.add(solarSystem.properties.name);
+                    solarSystemCount++;
+                }}
+            }}
+        }}
+        
+        function createDetailedStarPopup(star) {{
+            const props = star.properties;
+            
+            // Format the game information
+            const playerInfo = props.player_name && props.player_name !== 'Unknown' ? props.player_name : 'Unknown Player';
+            const teamInfo = props.team_name && props.team_name !== 'Unknown' ? props.team_name : 'Unknown Team';
+            const shotType = props.shot_type && props.shot_type !== 'Unknown' ? props.shot_type : 'Unknown';
+            const goalie = props.goalie_name && props.goalie_name !== 'Unknown' ? props.goalie_name : 'Empty Net';
+            const period = props.period || 'Unknown';
+            const time = props.time && props.time !== 'Unknown' ? props.time : 'Unknown';
+            const gameDate = props.game_date && props.game_date !== 'Unknown' ? props.game_date : 'Unknown';
+            const teamScore = props.team_score !== undefined ? props.team_score : 'Unknown';
+            const opponentScore = props.opponent_score !== undefined ? props.opponent_score : 'Unknown';
+            
+            // Coordinates
+            const goalX = props.goal_x !== undefined && props.goal_x !== null ? props.goal_x.toFixed(1) : 'N/A';
+            const goalY = props.goal_y !== undefined && props.goal_y !== null ? props.goal_y.toFixed(1) : 'N/A';
+            
+            let popupContent = `
+                <div style="max-width: 440px; font-family: 'Inter', sans-serif; line-height: 1.5;">
+                    <h3 style="margin: 0 0 20px 0; color: #ffd700; text-align: center; font-size: 19px; font-weight: 600;">
+                        ⭐ Goal Details
+                    </h3>
+                    
+                    <div style="background: rgba(255,255,255,0.1); padding: 18px; border-radius: 8px; margin-bottom: 16px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 15px;">
+                            <div style="line-height: 1.6;"><strong style="color: #64c8ff;">🏒 Player:</strong><br><span style="margin-top: 6px; display: block;">${{playerInfo}}</span></div>
+                            <div style="line-height: 1.6;"><strong style="color: #64c8ff;">🏴 Team:</strong><br><span style="margin-top: 6px; display: block;">${{teamInfo}}</span></div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.1); padding: 18px; border-radius: 8px; margin-bottom: 16px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 15px;">
+                            <div style="line-height: 1.6;"><strong style="color: #64c8ff;">📊 Score:</strong><br><span style="margin-top: 6px; display: block;">${{teamScore}} - ${{opponentScore}}</span></div>
+                            <div style="line-height: 1.6;"><strong style="color: #64c8ff;">🎯 Shot Type:</strong><br><span style="margin-top: 6px; display: block;">${{shotType}}</span></div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 15px; margin-top: 14px;">
+                            <div style="line-height: 1.6;"><strong style="color: #64c8ff;">🥅 Goaltender:</strong><br><span style="margin-top: 6px; display: block;">${{goalie}}</span></div>
+                            <div style="line-height: 1.6;"><strong style="color: #64c8ff;">⏰ Time:</strong><br><span style="margin-top: 6px; display: block;">P${{period}} - ${{time}}</span></div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.1); padding: 18px; border-radius: 8px; margin-bottom: 16px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; font-size: 15px;">
+                            <div style="line-height: 1.6;"><strong style="color: #64c8ff;">📍 X:</strong><br><span style="margin-top: 6px; display: block;">${{goalX}}</span></div>
+                            <div style="line-height: 1.6;"><strong style="color: #64c8ff;">📍 Y:</strong><br><span style="margin-top: 6px; display: block;">${{goalY}}</span></div>
+                            <div style="line-height: 1.6;"><strong style="color: #64c8ff;">📅 Date:</strong><br><span style="margin-top: 6px; display: block; font-size: 13px;">${{gameDate}}</span></div>
+                        </div>
+                    </div>`;
+            
+            // Add video link if available
+            if (props.url && props.url.trim() !== '' && props.url !== 'Unknown') {{
+                popupContent += `
+                    <div style="text-align: center; margin-top: 15px;">
+                        <a href="${{props.url}}" target="_blank" style="
+                            display: inline-block;
+                            background: linear-gradient(45deg, #ff4444, #ff6666);
+                            color: white;
+                            padding: 10px 20px;
+                            border-radius: 25px;
+                            text-decoration: none;
+                            font-weight: bold;
+                            font-size: 14px;
+                            transition: transform 0.2s ease, box-shadow 0.2s ease;
+                            box-shadow: 0 4px 15px rgba(255, 68, 68, 0.3);
+                        " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(255, 68, 68, 0.5)';" 
+                           onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(255, 68, 68, 0.3)';">
+                            🎥 Watch Goal Highlight
+                        </a>
+                    </div>`;
+            }}
+            
+            popupContent += '</div>';
+            
+            return popupContent;
+        }}
+        
+        function calculateGalaxyStats(galaxy) {{
+            // Calculate comprehensive stats for galaxy popup
+            const galaxyStars = originalStars.filter(star => 
+                star.properties.galaxy === galaxy.properties.name
+            );
+            
+            let stats = {{
+                name: galaxy.properties.name,
+                level: 'galaxy',
+                clusters: new Set(galaxyStars.map(star => star.properties.cluster)).size,
+                solarSystems: new Set(galaxyStars.map(star => star.properties.solar_system)).size,
+                stars: galaxyStars.length,
+                totalGoals: galaxyStars.length,
+                topPlayers: new Map(),
+                topGoalies: new Map(),
+                teams: new Set(),
+                shotTypes: new Map(),
+                periods: new Map(),
+                shotZones: new Map(),
+                situations: new Map(),
+                avgX: 0,
+                avgY: 0,
+                avgPeriod: 0,
+                avgPeriodTime: 0,
+                avgScoreDiff: 0,
+                avgSeasonDay: 0,
+                validCoords: 0,
+                validPeriodData: 0,
+                validScoreData: 0,
+                validSeasonData: 0
+            }};
+            
+            // Calculate detailed stats from all stars in this galaxy
+            galaxyStars.forEach(star => {{
+                // Shot zones
+                if (star.properties.shot_zone && star.properties.shot_zone.trim() !== '') {{
+                    stats.shotZones.set(star.properties.shot_zone, (stats.shotZones.get(star.properties.shot_zone) || 0) + 1);
+                }}
+                
+                // Shot types
+                if (star.properties.shot_type) {{
+                    stats.shotTypes.set(star.properties.shot_type, (stats.shotTypes.get(star.properties.shot_type) || 0) + 1);
+                }}
+                
+                // Periods
+                if (star.properties.period) {{
+                    stats.periods.set(star.properties.period, (stats.periods.get(star.properties.period) || 0) + 1);
+                }}
+                
+                // Teams
+                if (star.properties.team_name) {{
+                    stats.teams.add(star.properties.team_name);
+                }}
+                
+                // Top players
+                if (star.properties.player_name && star.properties.player_name !== 'Unknown') {{
+                    stats.topPlayers.set(star.properties.player_name, (stats.topPlayers.get(star.properties.player_name) || 0) + 1);
+                }}
+                
+                // Top goalies
+                if (star.properties.goalie_name && star.properties.goalie_name !== 'Unknown' && star.properties.goalie_name !== 'Empty Net') {{
+                    stats.topGoalies.set(star.properties.goalie_name, (stats.topGoalies.get(star.properties.goalie_name) || 0) + 1);
+                }}
+            }});
+            
+            return stats;
+        }}
+        
+        function calculateClusterStats(cluster) {{
+            // Calculate full stats for cluster popup using the same structure as getHierarchicalStats
+            let stats = {{
+                name: cluster.properties.name,
+                level: 'cluster',
+                clusters: 0,
+                solarSystems: 0,
+                stars: 0,
+                totalGoals: 0,
+                topPlayers: new Map(),
+                topGoalies: new Map(),
+                teams: new Set(),
+                shotTypes: new Map(),
+                periods: new Map(),
+                shotZones: new Map(),
+                situations: new Map(),
+                avgX: 0,
+                avgY: 0,
+                avgPeriod: 0,
+                avgPeriodTime: 0,
+                avgScoreDiff: 0,
+                avgSeasonDay: 0,
+                validCoords: 0,
+                validPeriodData: 0,
+                validScoreData: 0,
+                validSeasonData: 0
+            }};
+            
+            // Get all stars in this cluster
+            const clusterStars = originalStars.filter(star => 
+                star.properties.cluster === cluster.properties.name
+            );
+            
+            stats.stars = clusterStars.length;
+            stats.totalGoals = clusterStars.length;
+            stats.solarSystems = new Set(clusterStars.map(star => star.properties.solar_system)).size;
+            
+            // Calculate comprehensive stats from the stars
+            clusterStars.forEach(star => {{
+                // Shot zones
+                if (star.properties.shot_zone && star.properties.shot_zone.trim() !== '') {{
+                    stats.shotZones.set(star.properties.shot_zone, (stats.shotZones.get(star.properties.shot_zone) || 0) + 1);
+                }}
+                
+                // Shot types
+                if (star.properties.shot_type) {{
+                    stats.shotTypes.set(star.properties.shot_type, (stats.shotTypes.get(star.properties.shot_type) || 0) + 1);
+                }}
+                
+                // Periods
+                if (star.properties.period) {{
+                    stats.periods.set(star.properties.period, (stats.periods.get(star.properties.period) || 0) + 1);
+                }}
+                
+                // Teams
+                if (star.properties.team_name) {{
+                    stats.teams.add(star.properties.team_name);
+                }}
+                
+                // Top players in this cluster
+                if (star.properties.player_name && star.properties.player_name !== 'Unknown') {{
+                    stats.topPlayers.set(star.properties.player_name, (stats.topPlayers.get(star.properties.player_name) || 0) + 1);
+                }}
+                
+                // Top goalies faced in this cluster
+                if (star.properties.goalie_name && star.properties.goalie_name !== 'Unknown' && star.properties.goalie_name !== 'Empty Net') {{
+                    stats.topGoalies.set(star.properties.goalie_name, (stats.topGoalies.get(star.properties.goalie_name) || 0) + 1);
+                }}
+                
+                // Situations
+                if (star.properties.situation_code && star.properties.situation_code.trim() !== '') {{
+                    stats.situations.set(star.properties.situation_code, (stats.situations.get(star.properties.situation_code) || 0) + 1);
+                }}
+            }});
+            
+            return stats;
+        }}
+        
+        function calculateSolarSystemStats(solarSystem) {{
+            // Calculate full stats for solar system popup using the same structure as getHierarchicalStats
+            let stats = {{
+                name: solarSystem.properties.name,
+                level: 'solar system',
+                clusters: 0,
+                solarSystems: 0,
+                stars: 0,
+                totalGoals: 0,
+                topPlayers: new Map(),
+                topGoalies: new Map(),
+                teams: new Set(),
+                shotTypes: new Map(),
+                periods: new Map(),
+                shotZones: new Map(),
+                situations: new Map(),
+                avgX: 0,
+                avgY: 0,
+                avgPeriod: 0,
+                avgPeriodTime: 0,
+                avgScoreDiff: 0,
+                avgSeasonDay: 0,
+                validCoords: 0,
+                validPeriodData: 0,
+                validScoreData: 0,
+                validSeasonData: 0
+            }};
+            
+            // Get all stars in this solar system
+            const systemStars = originalStars.filter(star => 
+                star.properties.solar_system === solarSystem.properties.name
+            );
+            
+            stats.stars = systemStars.length;
+            stats.totalGoals = systemStars.length;
+            
+            // Calculate comprehensive stats from the stars
+            systemStars.forEach(star => {{
+                // Shot zones
+                if (star.properties.shot_zone && star.properties.shot_zone.trim() !== '') {{
+                    stats.shotZones.set(star.properties.shot_zone, (stats.shotZones.get(star.properties.shot_zone) || 0) + 1);
+                }}
+                
+                // Shot types
+                if (star.properties.shot_type) {{
+                    stats.shotTypes.set(star.properties.shot_type, (stats.shotTypes.get(star.properties.shot_type) || 0) + 1);
+                }}
+                
+                // Periods
+                if (star.properties.period) {{
+                    stats.periods.set(star.properties.period, (stats.periods.get(star.properties.period) || 0) + 1);
+                }}
+                
+                // Teams
+                if (star.properties.team_name) {{
+                    stats.teams.add(star.properties.team_name);
+                }}
+                
+                // Top players in this solar system
+                if (star.properties.player_name && star.properties.player_name !== 'Unknown') {{
+                    stats.topPlayers.set(star.properties.player_name, (stats.topPlayers.get(star.properties.player_name) || 0) + 1);
+                }}
+                
+                // Top goalies faced in this solar system
+                if (star.properties.goalie_name && star.properties.goalie_name !== 'Unknown' && star.properties.goalie_name !== 'Empty Net') {{
+                    stats.topGoalies.set(star.properties.goalie_name, (stats.topGoalies.get(star.properties.goalie_name) || 0) + 1);
+                }}
+                
+                // Situations
+                if (star.properties.situation_code && star.properties.situation_code.trim() !== '') {{
+                    stats.situations.set(star.properties.situation_code, (stats.situations.get(star.properties.situation_code) || 0) + 1);
+                }}
+            }});
+            
+            return stats;
+        }}
+        
+        function switchToFreeRoamMode() {{
+            currentMode = 'free-roam';
+            document.getElementById('view-mode-text').textContent = 'Star Map Mode';
+            
+            // Close any open popups when switching modes
+            if (map._popup) {{
+                map._explicitClose = true;
+                map.closePopup();
+                map._explicitClose = false;
+            }}
+            
+            // Show free roam elements, hide star map elements
+            toggleElementsByClass('free-roam-mode', true);
+            toggleElementsByClass('star-map-mode', false);
+            
+            // Clear star map layers
+            if (starMapLayer) {{
+                map.removeLayer(starMapLayer);
+            }}
+            if (galaxyShadeLayer) {{
+                map.removeLayer(galaxyShadeLayer);
+            }}
+            if (constellationLayer) {{
+                map.removeLayer(constellationLayer);
+            }}
+            
+            // Use embedded original GeoJSON data for free roam mode
+            console.log('Switching to original GeoJSON for free roam mode...');
+            
+            const originalFeatures = FREE_ROAM_DATA.features;
+            
+            // Note: originalGalaxies, originalClusters, originalSolarSystems, originalStars already defined globally above
+            
+            // Update global variables temporarily for free roam mode
+            window.freeRoamGalaxies = originalGalaxies;
+            window.freeRoamClusters = originalClusters;
+            window.freeRoamSolarSystems = originalSolarSystems;
+            window.freeRoamStars = originalStars;
+            
+            // Restore galaxy layers with original data
+            galaxyLayer.clearLayers();
+            galaxyLabelLayer.clearLayers();
+            
+            // Re-create galaxy markers and labels from original data
+            originalGalaxies.forEach(galaxy => {{
+                const coord = [galaxy.geometry.coordinates[1], galaxy.geometry.coordinates[0]];
+                
+                const marker = L.marker(coord, {{
+                    icon: L.divIcon({{
+                        className: 'galaxy-marker',
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12],
+                        html: `<div data-galaxy="${{galaxy.properties.name}}" title="${{galaxy.properties.name}}"></div>`
+                    }})
+                }});
+                
+                const label = L.marker(coord, {{
+                    icon: L.divIcon({{
+                        className: 'galaxy-label',
+                        html: galaxy.properties.name,
+                        iconSize: null,
+                        iconAnchor: [0, -35]
+                    }})
+                }});
+                
+                // Add popup to galaxy label with high-level galaxy information
+                label.bindPopup(createHierarchicalPopup(calculateGalaxyStats(galaxy), coord), {{
+                    maxWidth: 400,
+                    className: 'custom-popup',
+                    closeOnEscapeKey: true,
+                    autoPan: true
+                }});
+                
+                galaxyLayer.addLayer(marker);
+                galaxyLabelLayer.addLayer(label);
+            }});
+            
+            // Add layers back to map
+            map.addLayer(galaxyLayer);
+            map.addLayer(galaxyLabelLayer);
+            
+            // Re-initialize zoom-based rendering with original data
+            initializeFreeRoamRendering();
+            
+            // Set appropriate zoom for galaxy overview
+            const bounds = L.latLngBounds(originalGalaxies.map(g => [g.geometry.coordinates[1], g.geometry.coordinates[0]]));
+            map.fitBounds(bounds.pad(0.4));
+            
+            console.log('Free roam mode initialized with original data:', {{
+                galaxies: originalGalaxies.length,
+                clusters: originalClusters.length,
+                solarSystems: originalSolarSystems.length,
+                stars: originalStars.length
+            }});
+            
+            console.log('Switched to Free Roam mode');
+        }}
+        
+        function toggleElementsByClass(className, show) {{
+            const elements = document.querySelectorAll(`.${{className}}`);
+            elements.forEach(el => {{
+                if (show) {{
+                    el.style.display = el.dataset.originalDisplay || 'block';
+                    el.classList.add('show');
+                    el.classList.remove('hidden');
+                }} else {{
+                    if (!el.dataset.originalDisplay) {{
+                        el.dataset.originalDisplay = getComputedStyle(el).display;
+                    }}
+                    el.style.display = 'none';
+                    el.classList.remove('show');
+                    el.classList.add('hidden');
+                }}
+            }});
+        }}
+        
+        function initStarMapMode() {{
+            console.log('Initializing Star Map mode');
+            
+            // Create star map layer group
+            starMapLayer = L.layerGroup();
+            galaxyShadeLayer = L.layerGroup();
+            constellationLayer = L.layerGroup();
+            
+            // Add all stars to the map at once
+            renderAllStars();
+            
+            // Add galaxy shading and labels
+            renderGalaxyAreas();
+            
+            // Add layers to map
+            map.addLayer(starMapLayer);
+            map.addLayer(galaxyShadeLayer);
+            map.addLayer(constellationLayer);
+            
+            // Set static view to show entire star field
+            if (stars.length > 0) {{
+                const allStarBounds = L.latLngBounds(stars.map(s => [s.geometry.coordinates[1], s.geometry.coordinates[0]]));
+                map.fitBounds(allStarBounds.pad(0.1));
+            }} else {{
+                // Fallback if no stars
+                map.setView([0, 0], 2);
+            }}
+            
+            console.log(`Star Map initialized with ${{stars.length}} stars`);
+        }}
+        
+        function renderAllStars() {{
+            console.log('Rendering all stars for static map');
+            
+            stars.forEach(star => {{
+                const coord = [star.geometry.coordinates[1], star.geometry.coordinates[0]];
+                
+                // Create star marker
+                const marker = L.circleMarker(coord, {{
+                    radius: 2,
+                    fillColor: star.properties.cluster_color || '#64c8ff',
+                    color: 'none',
+                    fillOpacity: 0.8,
+                    weight: 0
+                }});
+                
+                // Add popup with goal details
+                const popupContent = `
+                    <div class="custom-popup">
+                        <h3>${{star.properties.player_name}}</h3>
+                        <p><strong>Team:</strong> ${{star.properties.team_name}}</p>
+                        <p><strong>Shot Type:</strong> ${{star.properties.shot_type}}</p>
+                        <p><strong>Period:</strong> ${{star.properties.period}}</p>
+                        <p><strong>Time:</strong> ${{star.properties.time}}</p>
+                        <p><strong>Date:</strong> ${{star.properties.game_date}}</p>
+                        ${{star.properties.url ? `<p><a href="${{star.properties.url}}" target="_blank">🎥 Watch Goal</a></p>` : ''}}
+                    </div>
+                `;
+                
+                marker.bindPopup(popupContent);
+                starMapLayer.addLayer(marker);
+            }});
+        }}
+        
+        function renderGalaxyAreas() {{
+            console.log('Rendering galaxy areas and smart labels');
+            
+            // Group stars by galaxy to calculate bounds and counts
+            const galaxyGroups = {{}};
+            stars.forEach(star => {{
+                const galaxyName = star.properties.galaxy;
+                if (!galaxyGroups[galaxyName]) {{
+                    galaxyGroups[galaxyName] = {{
+                        stars: [],
+                        color: star.properties.cluster_color || '#64c8ff'
+                    }};
+                }}
+                galaxyGroups[galaxyName].stars.push(star);
+            }});
+            
+            // Render each galaxy area with hover functionality
+            Object.entries(galaxyGroups).forEach(([galaxyName, group]) => {{
+                const coords = group.stars.map(s => [s.geometry.coordinates[1], s.geometry.coordinates[0]]);
+                
+                if (coords.length > 2) {{
+                    // Create convex hull for galaxy boundary
+                    const hull = getConvexHull(coords);
+                    
+                    if (hull.length > 2) {{
+                        // Create polygon for galaxy area with hover tooltip
+                        const galaxyPolygon = L.polygon(hull, {{
+                            color: group.color,
+                            fillColor: group.color,
+                            className: 'galaxy-area'
+                        }});
+                        
+                        // Add hover tooltip showing galaxy name and star count
+                        galaxyPolygon.bindTooltip(`${{galaxyName}}<br>${{group.stars.length}} goals`, {{
+                            permanent: false,
+                            direction: 'center',
+                            className: 'galaxy-tooltip'
+                        }});
+                        
+                        galaxyShadeLayer.addLayer(galaxyPolygon);
+                    }}
+                }}
+            }});
+            
+            // Smart galaxy label rendering with overlap prevention
+            renderSmartGalaxyLabels(galaxyGroups);
+        }}
+        
+        function renderSmartGalaxyLabels(galaxyGroups) {{
+            console.log('Rendering smart galaxy labels with overlap prevention');
+            
+            // Calculate label data for all galaxies
+            const labelData = Object.entries(galaxyGroups).map(([galaxyName, group]) => {{
+                const coords = group.stars.map(s => [s.geometry.coordinates[1], s.geometry.coordinates[0]]);
+                const center = getPolygonCenter(coords);
+                const starCount = group.stars.length;
+                const fontSize = Math.max(12, Math.min(24, 12 + Math.log(starCount) * 2));
+                
+                return {{
+                    name: galaxyName,
+                    center: center,
+                    starCount: starCount,
+                    fontSize: fontSize,
+                    bounds: calculateTextBounds(center, galaxyName, fontSize)
+                }};
+            }});
+            
+            // Sort by star count (larger galaxies get priority)
+            labelData.sort((a, b) => b.starCount - a.starCount);
+            
+            const renderedLabels = [];
+            const labelSpacing = 20; // Minimum pixels between labels
+            
+            labelData.forEach(labelInfo => {{
+                let canRender = true;
+                
+                // Check for overlaps with already rendered labels
+                for (const rendered of renderedLabels) {{
+                    if (labelsOverlap(labelInfo.bounds, rendered.bounds, labelSpacing)) {{
+                        canRender = false;
+                        break;
+                    }}
+                }}
+                
+                if (canRender) {{
+                    // Create and add the label
+                    const galaxyLabel = L.marker(labelInfo.center, {{
+                        icon: L.divIcon({{
+                            className: 'galaxy-label-static',
+                            html: labelInfo.name,
+                            iconSize: null,
+                            iconAnchor: [0, 0]
+                        }})
+                    }});
+                    
+                    // Apply dynamic font size
+                    galaxyLabel.on('add', function() {{
+                        const labelElement = this.getElement();
+                        if (labelElement) {{
+                            labelElement.style.fontSize = `${{labelInfo.fontSize}}px`;
+                        }}
+                    }});
+                    
+                    galaxyShadeLayer.addLayer(galaxyLabel);
+                    renderedLabels.push(labelInfo);
+                }}
+            }});
+            
+            console.log(`Rendered ${{renderedLabels.length}} non-overlapping galaxy labels out of ${{labelData.length}} total galaxies`);
+        }}
+        
+        function calculateTextBounds(center, text, fontSize) {{
+            // Approximate text bounds based on font size and text length
+            const charWidth = fontSize * 0.6; // Rough character width
+            const textWidth = text.length * charWidth;
+            const textHeight = fontSize * 1.2; // Line height
+            
+            return {{
+                left: center[1] - textWidth / 2,
+                right: center[1] + textWidth / 2,
+                top: center[0] - textHeight / 2,
+                bottom: center[0] + textHeight / 2
+            }};
+        }}
+        
+        function labelsOverlap(bounds1, bounds2, spacing) {{
+            // Check if two label bounds overlap with spacing buffer
+            return !(bounds1.right + spacing < bounds2.left || 
+                    bounds2.right + spacing < bounds1.left || 
+                    bounds1.bottom + spacing < bounds2.top || 
+                    bounds2.bottom + spacing < bounds1.top);
+        }}
+        
+        function getConvexHull(points) {{
+            // Simple convex hull algorithm (gift wrapping)
+            if (points.length < 3) return points;
+            
+            // Find the leftmost point
+            let leftmost = 0;
+            for (let i = 1; i < points.length; i++) {{
+                if (points[i][1] < points[leftmost][1] || 
+                    (points[i][1] === points[leftmost][1] && points[i][0] < points[leftmost][0])) {{
+                    leftmost = i;
+                }}
+            }}
+            
+            const hull = [];
+            let current = leftmost;
+            
+            do {{
+                hull.push(points[current]);
+                let next = (current + 1) % points.length;
+                
+                for (let i = 0; i < points.length; i++) {{
+                    if (orientation(points[current], points[i], points[next]) === 2) {{
+                        next = i;
+                    }}
+                }}
+                
+                current = next;
+            }} while (current !== leftmost);
+            
+            return hull;
+        }}
+        
+        function orientation(p, q, r) {{
+            const val = (q[0] - p[0]) * (r[1] - q[1]) - (q[1] - p[1]) * (r[0] - q[0]);
+            if (val === 0) return 0;
+            return val > 0 ? 1 : 2;
+        }}
+        
+        function getPolygonCenter(coords) {{
+            let lat = 0, lng = 0;
+            coords.forEach(coord => {{
+                lat += coord[0];
+                lng += coord[1];
+            }});
+            return [lat / coords.length, lng / coords.length];
+        }}
+        
+        function createDynamicConstellation(clusterCenters) {{
+            const points = clusterCenters.map(c => ({{ 
+                x: c.center[1], y: c.center[0], cluster: c 
+            }}));
+            
+            // Analyze the spatial distribution to choose constellation pattern
+            const analysis = analyzeClusterDistribution(points);
+            
+            if (analysis.pattern === 'linear') {{
+                // Create a snake-like pattern following the linear arrangement
+                return createLinearConstellation(points);
+            }} else if (analysis.pattern === 'branched') {{
+                // Create a tree-like or cross pattern
+                return createBranchedConstellation(points);
+            }} else if (analysis.pattern === 'clustered') {{
+                // Create grouped sub-constellations
+                return createClusteredConstellation(points);
+            }} else {{
+                // Default to enhanced circular/polygonal pattern
+                return createPolygonalConstellation(points);
+            }}
+        }}
+        
+        function analyzeClusterDistribution(points) {{
+            if (points.length < 4) {{
+                return {{ pattern: 'simple' }};
+            }}
+            
+            // Calculate distances and spread
+            const distances = [];
+            const center = {{ 
+                x: points.reduce((sum, p) => sum + p.x, 0) / points.length,
+                y: points.reduce((sum, p) => sum + p.y, 0) / points.length
+            }};
+            
+            points.forEach(p => {{
+                distances.push(distance(p, center));
+            }});
+            
+            const avgDistance = distances.reduce((sum, d) => sum + d, 0) / distances.length;
+            const maxDistance = Math.max(...distances);
+            const minDistance = Math.min(...distances);
+            
+            // Check for linear arrangement
+            const isLinear = checkLinearArrangement(points);
+            if (isLinear) {{
+                return {{ pattern: 'linear' }};
+            }}
+            
+            // Check for branched pattern (points far from center)
+            const farPoints = distances.filter(d => d > avgDistance * 1.5).length;
+            if (farPoints >= 2 && points.length >= 5) {{
+                return {{ pattern: 'branched' }};
+            }}
+            
+            // Check for clustered groups
+            const spreadRatio = maxDistance / (minDistance + 0.1);
+            if (spreadRatio > 3 && points.length >= 6) {{
+                return {{ pattern: 'clustered' }};
+            }}
+            
+            return {{ pattern: 'polygonal' }};
+        }}
+        
+        function createLinearConstellation(points) {{
+            // Sort points to create a flowing line
+            const sorted = [...points].sort((a, b) => a.x - b.x);
+            const coords = sorted.map(p => [p.y, p.x]);
+            coords.push(sorted[0] && [sorted[0].y, sorted[0].x]); // Close if enough spread
+            
+            return {{ type: 'outline', coords }};
+        }}
+        
+        function createBranchedConstellation(points) {{
+            // Find central point and create branches
+            const center = points.reduce((avg, p) => ({{
+                x: avg.x + p.x / points.length,
+                y: avg.y + p.y / points.length
+            }}), {{ x: 0, y: 0 }});
+            
+            const centralPoint = points.reduce((closest, p) => 
+                distance(p, center) < distance(closest, center) ? p : closest
+            );
+            
+            // Create lines from center to other significant points
+            const lines = [];
+            const sortedByDistance = [...points]
+                .filter(p => p !== centralPoint)
+                .sort((a, b) => distance(b, center) - distance(a, center));
+            
+            // Connect to 3-4 furthest points to create branches
+            const branchCount = Math.min(4, Math.max(2, Math.floor(points.length / 2)));
+            for (let i = 0; i < branchCount; i++) {{
+                if (sortedByDistance[i]) {{
+                    lines.push({{
+                        coords: [[centralPoint.y, centralPoint.x], [sortedByDistance[i].y, sortedByDistance[i].x]],
+                        weight: 4 - i * 0.5 // Thicker lines for primary branches
+                    }});
+                }}
+            }}
+            
+            return {{ type: 'lines', lines }};
+        }}
+        
+        function createClusteredConstellation(points) {{
+            // Create interconnected clusters
+            const lines = [];
+            
+            // Sort by distance from center
+            const center = {{ 
+                x: points.reduce((sum, p) => sum + p.x, 0) / points.length,
+                y: points.reduce((sum, p) => sum + p.y, 0) / points.length
+            }};
+            
+            const sorted = [...points].sort((a, b) => distance(a, center) - distance(b, center));
+            
+            // Connect each point to 1-2 nearest neighbors
+            sorted.forEach((point, i) => {{
+                const nearestNeighbors = sorted
+                    .filter((p, j) => j !== i)
+                    .sort((a, b) => distance(point, a) - distance(point, b))
+                    .slice(0, 2);
+                
+                nearestNeighbors.forEach(neighbor => {{
+                    lines.push({{
+                        coords: [[point.y, point.x], [neighbor.y, neighbor.x]],
+                        weight: 3
+                    }});
+                }});
+            }});
+            
+            // Remove duplicate lines
+            const uniqueLines = lines.filter((line, i) => {{
+                return !lines.slice(0, i).some(existing => 
+                    (existing.coords[0][0] === line.coords[1][0] && existing.coords[0][1] === line.coords[1][1] &&
+                     existing.coords[1][0] === line.coords[0][0] && existing.coords[1][1] === line.coords[0][1])
+                );
+            }});
+            
+            return {{ type: 'lines', lines: uniqueLines.slice(0, points.length) }};
+        }}
+        
+        function createPolygonalConstellation(points) {{
+            // Enhanced polygonal approach - not just convex hull
+            if (points.length === 3) {{
+                const coords = points.map(p => [p.y, p.x]);
+                coords.push(coords[0]); // Close triangle
+                return {{ type: 'outline', coords }};
+            }}
+            
+            // For 4+ points, create more interesting shapes
+            const sorted = [...points].sort((a, b) => {{
+                const centerX = points.reduce((sum, p) => sum + p.x, 0) / points.length;
+                const centerY = points.reduce((sum, p) => sum + p.y, 0) / points.length;
+                
+                const angleA = Math.atan2(a.y - centerY, a.x - centerX);
+                const angleB = Math.atan2(b.y - centerY, b.x - centerX);
+                return angleA - angleB;
+            }});
+            
+            const coords = sorted.map(p => [p.y, p.x]);
+            coords.push(sorted[0] && [sorted[0].y, sorted[0].x]); // Close shape
+            
+            return {{ type: 'outline', coords }};
+        }}
+        
+        function checkLinearArrangement(points) {{
+            if (points.length < 4) return false;
+            
+            // Check if points roughly form a line
+            const sorted = [...points].sort((a, b) => a.x - b.x);
+            let linearScore = 0;
+            
+            for (let i = 1; i < sorted.length - 1; i++) {{
+                const prev = sorted[i - 1];
+                const curr = sorted[i];
+                const next = sorted[i + 1];
+                
+                // Calculate how much the middle point deviates from the line
+                const expectedY = prev.y + (next.y - prev.y) * (curr.x - prev.x) / (next.x - prev.x);
+                const deviation = Math.abs(curr.y - expectedY);
+                const maxDeviation = Math.abs(next.y - prev.y) * 0.3; // Allow 30% deviation
+                
+                if (deviation <= maxDeviation) {{
+                    linearScore++;
+                }}
+            }}
+            
+            return linearScore >= (sorted.length - 2) * 0.6; // 60% of points should be roughly linear
+        }}
+        
+        function crossProduct(o, a, b) {{
+            return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+        }}
+        
+        function distance(a, b) {{
+            return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+        }}
+        
+        // Filter and Constellation Drawing System
+        function buildFilterOptions() {{
+            console.log('Building filter options from data');
+            
+            // Extract unique values for each filter category
+            const filterData = {{
+                shotTypes: new Set(),
+                situations: new Set(),
+                periods: new Set(),
+                zones: new Set()
+            }};
+            
+            stars.forEach(star => {{
+                if (star.properties.shot_type) filterData.shotTypes.add(star.properties.shot_type);
+                if (star.properties.situation_code) filterData.situations.add(star.properties.situation_code);
+                if (star.properties.period) filterData.periods.add(star.properties.period.toString());
+                if (star.properties.goal_x !== undefined && star.properties.goal_y !== undefined) {{
+                    const zone = getGoalZone(star.properties.goal_x, star.properties.goal_y);
+                    if (zone) filterData.zones.add(zone);
+                }}
+            }});
+            
+            // Build filter UI
+            buildFilterSection('shot-type-filters', Array.from(filterData.shotTypes).sort());
+            buildFilterSection('situation-filters', Array.from(filterData.situations).sort());
+            buildFilterSection('period-filters', Array.from(filterData.periods).sort((a, b) => parseInt(a) - parseInt(b)));
+            buildFilterSection('zone-filters', Array.from(filterData.zones).sort());
+            
+            // Initialize all filters as selected
+            initializeFilters();
+            
+            console.log('Filter options built:', {{
+                shotTypes: filterData.shotTypes.size,
+                situations: filterData.situations.size,
+                periods: filterData.periods.size,
+                zones: filterData.zones.size
+            }});
+        }}
+        
+        function getGoalZone(x, y) {{
+            // Simple zone classification based on coordinates
+            if (!x || !y) return null;
+            
+            const absX = Math.abs(x);
+            const absY = Math.abs(y);
+            
+            if (absX < 20 && absY < 15) return 'Slot';
+            if (absX < 30 && absY < 20) return 'Near';
+            if (absX > 50) return 'Long Range';
+            if (absY > 30) return 'Wide Angle';
+            return 'Mid Range';
+        }}
+        
+        function buildFilterSection(containerId, options) {{
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            options.forEach(option => {{
+                const filterElement = document.createElement('div');
+                filterElement.className = 'filter-option selected';
+                filterElement.textContent = option;
+                filterElement.dataset.value = option;
+                
+                filterElement.addEventListener('click', function() {{
+                    this.classList.toggle('selected');
+                    updateActiveFilters();
+                }});
+                
+                container.appendChild(filterElement);
+            }});
+        }}
+        
+        function initializeFilters() {{
+            // Set all filter options as selected by default
+            const allOptions = document.querySelectorAll('.filter-option');
+            allOptions.forEach(option => {{
+                option.classList.add('selected');
+            }});
+            
+            updateActiveFilters();
+        }}
+        
+        function updateActiveFilters() {{
+            activeFilters = {{
+                shotTypes: getSelectedValues('shot-type-filters'),
+                situations: getSelectedValues('situation-filters'),
+                periods: getSelectedValues('period-filters'),
+                zones: getSelectedValues('zone-filters')
+            }};
+            
+            // Enable/disable draw button based on whether a player is selected
+            const drawBtn = document.getElementById('draw-btn');
+            if (selectedPlayer && Object.values(activeFilters).some(arr => arr.length > 0)) {{
+                drawBtn.disabled = false;
+            }} else {{
+                drawBtn.disabled = true;
+            }}
+            
+            console.log('Active filters updated:', activeFilters);
+        }}
+        
+        function getSelectedValues(containerId) {{
+            const container = document.getElementById(containerId);
+            if (!container) return [];
+            
+            const selectedOptions = container.querySelectorAll('.filter-option.selected');
+            return Array.from(selectedOptions).map(option => option.dataset.value);
+        }}
+        
+        function drawConstellation() {{
+            if (!selectedPlayer || currentMode !== 'star-map') return;
+            
+            console.log(`Drawing constellation for ${{selectedPlayer.name}} with filters:`, activeFilters);
+            
+            // Clear existing constellation
+            constellationLayer.clearLayers();
+            
+            // Filter goals based on active filters
+            const filteredGoals = stars.filter(star => {{
+                if (star.properties.player_name !== selectedPlayer.name) return false;
+                
+                // Apply filters
+                if (activeFilters.shotTypes.length > 0 && !activeFilters.shotTypes.includes(star.properties.shot_type)) return false;
+                if (activeFilters.situations.length > 0 && !activeFilters.situations.includes(star.properties.situation_code)) return false;
+                if (activeFilters.periods.length > 0 && !activeFilters.periods.includes(star.properties.period.toString())) return false;
+                
+                if (activeFilters.zones.length > 0) {{
+                    const zone = getGoalZone(star.properties.goal_x, star.properties.goal_y);
+                    if (!activeFilters.zones.includes(zone)) return false;
+                }}
+                
+                return true;
+            }});
+            
+            if (filteredGoals.length === 0) {{
+                console.log('No goals match the current filters');
+                return;
+            }}
+            
+            // Group goals by cluster for smoother constellation lines
+            const clusterGroups = {{}};
+            filteredGoals.forEach(goal => {{
+                const clusterName = goal.properties.cluster;
+                if (!clusterGroups[clusterName]) {{
+                    clusterGroups[clusterName] = {{
+                        goals: [],
+                        center: null,
+                        goalCount: 0
+                    }};
+                }}
+                clusterGroups[clusterName].goals.push(goal);
+                clusterGroups[clusterName].goalCount++;
+            }});
+            
+            // Calculate cluster centers
+            Object.values(clusterGroups).forEach(cluster => {{
+                const coords = cluster.goals.map(g => [g.geometry.coordinates[1], g.geometry.coordinates[0]]);
+                cluster.center = getPolygonCenter(coords);
+            }});
+            
+            // Draw constellation outline connecting clusters in order
+            const clusterCenters = Object.values(clusterGroups);
+            
+            if (clusterCenters.length > 1) {{
+                // Sort clusters by goal count (highest first) for consistent ordering
+                clusterCenters.sort((a, b) => b.goalCount - a.goalCount);
+                
+                const maxGoals = clusterCenters[0].goalCount;
+                
+                if (clusterCenters.length === 2) {{
+                    // Simple line between two clusters
+                    const line = L.polyline([clusterCenters[0].center, clusterCenters[1].center], {{
+                        color: '#ffd700',
+                        weight: 4,
+                        opacity: 0.8,
+                        className: 'constellation-line'
+                    }});
+                    constellationLayer.addLayer(line);
+                }} else if (clusterCenters.length >= 3) {{
+                    // Create dynamic constellation shape based on cluster distribution
+                    const constellationShape = createDynamicConstellation(clusterCenters);
+                    
+                    if (constellationShape.type === 'lines') {{
+                        // Draw individual connecting lines for complex patterns
+                        constellationShape.lines.forEach(line => {{
+                            const polyline = L.polyline(line.coords, {{
+                                color: '#ffd700',
+                                weight: line.weight,
+                                opacity: 0.8,
+                                className: 'constellation-line'
+                            }});
+                            constellationLayer.addLayer(polyline);
+                        }});
+                    }} else {{
+                        // Draw closed outline shape
+                        const constellation = L.polyline(constellationShape.coords, {{
+                            color: '#ffd700',
+                            weight: 3,
+                            opacity: 0.8,
+                            className: 'constellation-line'
+                        }});
+                        constellationLayer.addLayer(constellation);
+                    }}
+                }}
+                
+                // Highlight all cluster centers
+                clusterCenters.forEach((cluster, index) => {{
+                    const size = index === 0 ? 6 : 4; // Largest cluster gets bigger marker
+                    const highlight = L.circleMarker(cluster.center, {{
+                        radius: size,
+                        fillColor: '#ffd700',
+                        color: '#ffffff',
+                        fillOpacity: 0.9,
+                        weight: 2
+                    }});
+                    
+                    constellationLayer.addLayer(highlight);
+                }});
+            }}
+            
+            // Highlight the filtered goals
+            filteredGoals.forEach(goal => {{
+                const coord = [goal.geometry.coordinates[1], goal.geometry.coordinates[0]];
+                const highlight = L.circleMarker(coord, {{
+                    radius: 4,
+                    fillColor: '#ffff00',
+                    color: '#ffffff',
+                    fillOpacity: 0.9,
+                    weight: 2
+                }});
+                
+                constellationLayer.addLayer(highlight);
+            }});
+            
+            console.log(`Constellation drawn with ${{filteredGoals.length}} goals across ${{Object.keys(clusterGroups).length}} clusters`);
+        }}
+        
+        // Override search functionality to work with star map mode
+        function searchPlayerStarMap(playerName) {{
+            selectedPlayer = {{ name: playerName }};
+            
+            // Enable draw button if filters are active
+            updateActiveFilters();
+            
+            console.log(`Player selected for constellation: ${{playerName}}`);
+        }}
+
+        // Initialize the dual-mode system
+        initDualModeSystem();
+        
         // Show welcome modal on first visit - after map is fully initialized
         if (!localStorage.getItem('nhl-constellation-welcomed')) {{
             // Use longer delay on mobile devices for better performance
@@ -3518,11 +5314,11 @@ def create_embedded_constellation_html():
         f.write(html_content)
     
     print(f"✅ Created interactive constellation map: {output_path}")
-    print(f"📊 Embedded {len(geojson_data['features'])} celestial objects")
-    print(f"🌌 {len([f for f in geojson_data['features'] if f['properties']['type'] == 'galaxy'])} galaxies")
-    print(f"⭐ {len([f for f in geojson_data['features'] if f['properties']['type'] == 'cluster'])} clusters") 
-    print(f"🪐 {len([f for f in geojson_data['features'] if f['properties']['type'] == 'solar_system'])} solar systems")
-    print(f"🌟 {len([f for f in geojson_data['features'] if f['properties']['type'] == 'star'])} stars")
+    print(f"📊 Embedded {len(static_geojson_data['features'])} celestial objects")
+    print(f"🌌 {len([f for f in static_geojson_data['features'] if f['properties']['type'] == 'galaxy'])} galaxies")
+    print(f"⭐ {len([f for f in static_geojson_data['features'] if f['properties']['type'] == 'cluster'])} clusters") 
+    print(f"🪐 {len([f for f in static_geojson_data['features'] if f['properties']['type'] == 'solar_system'])} solar systems")
+    print(f"🌟 {len([f for f in static_geojson_data['features'] if f['properties']['type'] == 'star'])} stars")
     print(f"🚀 Open {output_path} in Chrome to explore!")
 
 if __name__ == "__main__":
