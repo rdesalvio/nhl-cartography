@@ -267,13 +267,39 @@ def create_embedded_constellation_html():
         /* Mobile icons - always available but controlled by JavaScript */
         .mobile-info-icon {{
             position: fixed;
-            bottom: max(60px, env(safe-area-inset-bottom, 0px) + 20px);
+            bottom: max(100px, env(safe-area-inset-bottom, 0px) + 60px);
             left: 15px;
             width: 44px;
             height: 44px;
             background: rgba(10, 15, 35, 0.95);
             border: 2px solid rgba(100, 200, 255, 0.6);
             border-radius: 50%;
+        }}
+        
+        /* Chrome mobile specific positioning - higher clearance */
+        body.chrome-mobile .mobile-info-icon {{
+            bottom: max(130px, env(safe-area-inset-bottom, 0px) + 90px) !important;
+        }}
+        
+        body.chrome-mobile .mobile-filter-toggle {{
+            bottom: max(130px, env(safe-area-inset-bottom, 0px) + 90px) !important;
+        }}
+        
+        .mobile-info-icon:hover {{
+            background: rgba(100, 200, 255, 0.2);
+            transform: scale(1.1);
+        }}
+        
+        .mobile-filter-toggle {{
+            position: fixed;
+            bottom: max(100px, env(safe-area-inset-bottom, 0px) + 60px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 45px;
+            background: rgba(10, 15, 35, 0.95);
+            border: 1px solid rgba(100, 200, 255, 0.4);
+            border-radius: 25px;
             display: flex; /* Always visible for both mobile and desktop */
             align-items: center;
             justify-content: center;
@@ -294,7 +320,7 @@ def create_embedded_constellation_html():
         
         .mobile-filter-toggle {{
             position: fixed;
-            bottom: max(60px, env(safe-area-inset-bottom, 0px) + 20px);
+            bottom: max(100px, env(safe-area-inset-bottom, 0px) + 60px);
             left: 50%;
             transform: translateX(-50%);
             width: 60px;
@@ -898,7 +924,7 @@ def create_embedded_constellation_html():
                 display: none !important;
                 position: fixed !important;
                 top: auto !important; /* Override the base top positioning */
-                bottom: 120px !important; /* Position above the filter toggle button */
+                bottom: 160px !important; /* Position above the filter toggle button */
                 left: 20px !important;
                 right: 20px !important;
                 width: auto !important;
@@ -915,7 +941,7 @@ def create_embedded_constellation_html():
             
             .mobile-filter-toggle {{
                 display: flex !important;
-                bottom: 60px !important;
+                bottom: 100px !important;
                 width: 80px !important;
                 height: 45px !important;
                 font-size: 18px !important;
@@ -936,7 +962,7 @@ def create_embedded_constellation_html():
             
             /* Info icon positioning for tablets */
             .mobile-info-icon {{
-                bottom: 60px !important;
+                bottom: 100px !important;
                 left: 20px !important;
                 width: 50px !important;
                 height: 50px !important;
@@ -986,7 +1012,7 @@ def create_embedded_constellation_html():
                 display: none !important;
                 position: fixed !important;
                 top: auto !important; /* Override the base top positioning */
-                bottom: 125px !important; /* Position above the filter toggle button */
+                bottom: 165px !important; /* Position above the filter toggle button */
                 left: 10px !important;
                 right: 10px !important;
                 width: auto !important;
@@ -1024,7 +1050,7 @@ def create_embedded_constellation_html():
             
             /* Mobile filter toggle - position safely above browser chrome */
             .mobile-filter-toggle {{
-                bottom: 70px !important;
+                bottom: 110px !important;
                 width: 70px !important;
                 height: 40px !important;
                 font-size: 16px !important;
@@ -1726,6 +1752,14 @@ def create_embedded_constellation_html():
         
         // Set up modal event listeners after DOM is ready
         document.addEventListener('DOMContentLoaded', function() {{
+            // Detect Chrome mobile and add class for specific positioning
+            const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+            const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+            if (isChrome && isMobile) {{
+                document.body.classList.add('chrome-mobile');
+                console.log('Chrome mobile detected - using higher button positioning');
+            }}
+            
             const modal = document.getElementById('welcome-modal');
             const closeBtn = document.querySelector('.welcome-close');
             
