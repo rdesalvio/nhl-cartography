@@ -121,13 +121,15 @@ class StarChartGenerator:
         """Create spiral galaxy layout similar to mapping_static.py"""
         galaxy_positions = {}
         
-        # Use spiral pattern to distribute galaxies
+        # Use spiral pattern to distribute galaxies - more compact layout
         rings = []
         remaining_galaxies = len(galaxies)
         ring_radius = 0
-        galaxy_separation = 25
+        galaxy_separation = 22  # Reduced from 25 to bring galaxies closer to center
         
-        while remaining_galaxies > 0:
+        max_galaxy_radius = self.radius * 0.85  # Keep galaxies within 65% of chart radius
+        
+        while remaining_galaxies > 0 and ring_radius <= self.radius:
             if ring_radius == 0:
                 galaxies_in_ring = 1
             else:
@@ -138,6 +140,12 @@ class StarChartGenerator:
             rings.append((ring_radius, galaxies_in_ring))
             remaining_galaxies -= galaxies_in_ring
             ring_radius += galaxy_separation
+        
+        # If there are still remaining galaxies, pack them into the last ring
+        if remaining_galaxies > 0 and rings:
+            last_ring_radius, last_ring_count = rings[-1]
+            rings[-1] = (last_ring_radius, last_ring_count + remaining_galaxies)
+            remaining_galaxies = 0
         
         # Assign positions
         galaxy_idx = 0
@@ -511,15 +519,6 @@ class StarChartGenerator:
                        alpha=0.9,
                        path_effects=[
                            path_effects.withStroke(linewidth=1, foreground='#2f1b14', alpha=0.6)
-                       ])
-            
-            # Classical attribution in English
-            plt.figtext(0.98, 0.02, 'NHL CARTOGRAPHY PROJECT', 
-                       ha='right', fontsize=10, color='#cd853f',
-                       fontweight='normal', fontfamily=self.custom_font,
-                       alpha=0.8,
-                       path_effects=[
-                           path_effects.withStroke(linewidth=1, foreground='#2f1b14', alpha=0.5)
                        ])
             
             # Save the chart with tight bounding box to prevent cutoff

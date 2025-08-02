@@ -1,6 +1,6 @@
 # NHL Cartography
 Every goal scored in the NHL can be thought of as a location in time and space. This project captures those locations, groups them based on similarity, and maps them. 
-<img src="visualizations/nhl_star_chart_web_20250802_172502.png"/>
+<img src="visualizations/nhl_star_chart.png"/>
 
 ## Background
 This project is directly inspired by the [Map of Github](https://anvaka.github.io/map-of-github) and uses many of the same concepts. Goal data is soured from the [NHL API](https://github.com/Zmalski/NHL-API-Reference). The UI is entirely "vibe coded" with the aid of Claude Code. An AI agent was used in the development and exploration of the clustering process but it is mostly my code. It is also my code for pulling the data. I used this project as a way to explore the current state of AI tools and had some fun with a dataset I am familiar with. This entire project is meant to be fun and not intended for any real deep dive into the data.
