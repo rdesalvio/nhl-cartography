@@ -274,11 +274,26 @@ def create_embedded_constellation_html():
             background: rgba(10, 15, 35, 0.95);
             border: 2px solid rgba(100, 200, 255, 0.6);
             border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #64c8ff;
+            text-align: center;
+            line-height: 1;
+            cursor: pointer;
+            z-index: 1002;
+            transition: all 0.3s ease;
         }}
         
         /* Chrome mobile specific positioning - higher clearance */
         body.chrome-mobile .mobile-info-icon {{
             bottom: max(130px, env(safe-area-inset-bottom, 0px) + 90px) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            line-height: 1 !important;
+            font-size: 18px !important;
         }}
         
         body.chrome-mobile .mobile-filter-toggle {{
