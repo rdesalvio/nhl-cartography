@@ -294,7 +294,7 @@ def create_embedded_constellation_html():
         
         .mobile-filter-toggle {{
             position: fixed;
-            bottom: 20px;
+            bottom: 35px;
             left: 50%;
             transform: translateX(-50%);
             width: 60px;
@@ -898,7 +898,7 @@ def create_embedded_constellation_html():
                 display: none !important;
                 position: fixed !important;
                 top: auto !important; /* Override the base top positioning */
-                bottom: 80px !important; /* Position above the filter toggle button */
+                bottom: 95px !important; /* Position above the filter toggle button */
                 left: 20px !important;
                 right: 20px !important;
                 width: auto !important;
@@ -915,7 +915,7 @@ def create_embedded_constellation_html():
             
             .mobile-filter-toggle {{
                 display: flex !important;
-                bottom: 20px !important;
+                bottom: 35px !important;
                 width: 80px !important;
                 height: 45px !important;
                 font-size: 18px !important;
@@ -986,7 +986,7 @@ def create_embedded_constellation_html():
                 display: none !important;
                 position: fixed !important;
                 top: auto !important; /* Override the base top positioning */
-                bottom: 70px !important; /* Position above the filter toggle button */
+                bottom: 85px !important; /* Position above the filter toggle button */
                 left: 10px !important;
                 right: 10px !important;
                 width: auto !important;
@@ -1022,9 +1022,9 @@ def create_embedded_constellation_html():
                 font-size: 16px !important;
             }}
             
-            /* Mobile filter toggle - already in good position at bottom center */
+            /* Mobile filter toggle - position safely above browser chrome */
             .mobile-filter-toggle {{
-                bottom: 15px !important;
+                bottom: 30px !important;
                 width: 70px !important;
                 height: 40px !important;
                 font-size: 16px !important;
