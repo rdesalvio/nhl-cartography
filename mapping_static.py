@@ -294,7 +294,9 @@ class StaticConstellationMapper:
                                     "time": str(goal_data.get('time', '00:00')),
                                     "team_score": int(goal_data.get('team_score', 0)) if pd.notna(goal_data.get('team_score', 0)) else 0,
                                     "opponent_score": int(goal_data.get('opponent_score', 0)) if pd.notna(goal_data.get('opponent_score', 0)) else 0,
-                                    "goalie_name": str(goal_data.get('goalie', 'Unknown')),
+                                    "goalie_name": str(goal_data.get('goalie_name', 'Unknown')),
+                                    "shot_zone": goal_data.get('shot_zone', None),
+                                    "situation": goal_data.get('situation', None),
                                     "goal_x": float(goal_data.get('x', 0)) if pd.notna(goal_data.get('x')) else None,
                                     "goal_y": float(goal_data.get('y', 0)) if pd.notna(goal_data.get('y')) else None,
                                 }
