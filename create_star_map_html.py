@@ -19,7 +19,7 @@ def create_embedded_constellation_html():
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>NHL Constellation Map - Interactive</title>
     
     <!-- Leaflet CSS -->
@@ -267,7 +267,7 @@ def create_embedded_constellation_html():
         /* Mobile icons - always available but controlled by JavaScript */
         .mobile-info-icon {{
             position: fixed;
-            bottom: 15px;
+            bottom: max(60px, env(safe-area-inset-bottom, 0px) + 20px);
             left: 15px;
             width: 44px;
             height: 44px;
@@ -294,7 +294,7 @@ def create_embedded_constellation_html():
         
         .mobile-filter-toggle {{
             position: fixed;
-            bottom: 35px;
+            bottom: max(60px, env(safe-area-inset-bottom, 0px) + 20px);
             left: 50%;
             transform: translateX(-50%);
             width: 60px;
@@ -898,7 +898,7 @@ def create_embedded_constellation_html():
                 display: none !important;
                 position: fixed !important;
                 top: auto !important; /* Override the base top positioning */
-                bottom: 95px !important; /* Position above the filter toggle button */
+                bottom: 120px !important; /* Position above the filter toggle button */
                 left: 20px !important;
                 right: 20px !important;
                 width: auto !important;
@@ -915,7 +915,7 @@ def create_embedded_constellation_html():
             
             .mobile-filter-toggle {{
                 display: flex !important;
-                bottom: 35px !important;
+                bottom: 60px !important;
                 width: 80px !important;
                 height: 45px !important;
                 font-size: 18px !important;
@@ -936,7 +936,7 @@ def create_embedded_constellation_html():
             
             /* Info icon positioning for tablets */
             .mobile-info-icon {{
-                bottom: 20px !important;
+                bottom: 60px !important;
                 left: 20px !important;
                 width: 50px !important;
                 height: 50px !important;
@@ -986,7 +986,7 @@ def create_embedded_constellation_html():
                 display: none !important;
                 position: fixed !important;
                 top: auto !important; /* Override the base top positioning */
-                bottom: 85px !important; /* Position above the filter toggle button */
+                bottom: 125px !important; /* Position above the filter toggle button */
                 left: 10px !important;
                 right: 10px !important;
                 width: auto !important;
@@ -1024,7 +1024,7 @@ def create_embedded_constellation_html():
             
             /* Mobile filter toggle - position safely above browser chrome */
             .mobile-filter-toggle {{
-                bottom: 30px !important;
+                bottom: 70px !important;
                 width: 70px !important;
                 height: 40px !important;
                 font-size: 16px !important;
